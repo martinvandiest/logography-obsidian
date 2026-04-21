@@ -11,3 +11,8 @@ Thumbs.db
 
 # Transcripts raw JSON (large)
 transcripts/*.json
+
+# Transcripts — verbatim derivative works of CC-BY-NC-ND material
+# Do NOT commit to public repo
+transcripts/*.txt
+transcripts/*.srt
