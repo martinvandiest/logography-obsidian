@@ -16,3 +16,7 @@ transcripts/*.json
 # Do NOT commit to public repo
 transcripts/*.txt
 transcripts/*.srt
+
+# Archive processing scripts — local VPS only
+harvest.py
+transcribe.py
