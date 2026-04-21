@@ -1,0 +1,13 @@
+# Audio files (large, kept on VPS only)
+audio/
+*.mp3
+*.m4a
+*.wav
+*.ogg
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Transcripts raw JSON (large)
+transcripts/*.json
