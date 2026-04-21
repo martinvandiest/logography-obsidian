@@ -1,0 +1,709 @@
+{
+  "meta": {
+    "session_id": "20170623NSDRM",
+    "date": "2017-06-23",
+    "duration_min": 63,
+    "dreamer_count": 1,
+    "dreamers": ["D1: JulieH (JH)"],
+    "session_types": ["dream_exploration", "midwifery"]
+  },
+
+  "phases": [
+    {
+      "phase": "terrain",
+      "dreamer": "D1",
+      "start_approx_min": 0,
+      "end_approx_min": 3,
+      "duration_min": 3,
+      "steps_completed": ["opening", "dream_narration"],
+      "completed": true,
+      "notes": "Dreamer reads dream aloud. Setup: shopping center, computer talk, falls asleep."
+    },
+    {
+      "phase": "scenes",
+      "dreamer": "D1",
+      "start_approx_min": 3,
+      "end_approx_min": 9,
+      "duration_min": 6,
+      "steps_completed": ["problem_identification", "pretending_identified", "goal_identified", "failure_identified"],
+      "completed": true,
+      "notes": "Pierre redirects from interpretation to dream-logic. Identifies pretending as core mechanism, learning goal, and failure outcome."
+    },
+    {
+      "phase": "analysis",
+      "dreamer": "D1",
+      "start_approx_min": 9,
+      "end_approx_min": 29,
+      "duration_min": 20,
+      "steps_completed": ["states_of_mind_extraction", "four_states_mapped", "naming_states", "connecting_states"],
+      "completed": true,
+      "notes": "Four states of mind extracted: (1) pretending interest despite vagueness, (2) revealing truth about falling asleep, (3) worrying about being offensive, (4) dismissing encounter. Naming: creepy, phony, vague, cheerleader. States 2-3 connected."
+    },
+    {
+      "phase": "cross_exam",
+      "dreamer": "D1",
+      "start_approx_min": 29,
+      "end_approx_min": 50,
+      "duration_min": 21,
+      "steps_completed": ["revisiting_states", "strategy_revealed", "origin_memory_surfaced", "mother_role_identified", "belief_traced"],
+      "completed": true,
+      "notes": "Pierre traces pattern to childhood. Dreamer recalls age 8 TV contest memory. Mother's prohibition 'you can't do that' identified as origin. Dreamer connects to lifelong pattern of self-suppression. Core belief about self-revelation being offensive traced to mother's reaction."
+    },
+    {
+      "phase": "integration",
+      "dreamer": "D1",
+      "start_approx_min": 50,
+      "end_approx_min": 52,
+      "duration_min": 2,
+      "steps_completed": ["recognizing_violation", "reframing"],
+      "completed": true,
+      "notes": "Pierre notes dreamer is currently violating the old teaching by revealing herself in session. Dreamer expresses relief at having something concrete to reference. Pierre reframes: 'maybe you no longer have to pretend you're not there.'"
+    }
+  ],
+
+  "questions": [
+    {
+      "timestamp_approx_min": 3,
+      "pg_asks": "Asks dreamer to interpret her own dream",
+      "question_type": "opening",
+      "trigger": "Dream narration complete",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "redirect",
+      "phase": "scenes",
+      "depth_level": 1
+    },
+    {
+      "timestamp_approx_min": 4,
+      "pg_asks": "Redirects dreamer back to dream content rather than life interpretation",
+      "question_type": "redirecting",
+      "trigger": "Dreamer interprets dream as about her general life patterns",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "confused",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 1
+    },
+    {
+      "timestamp_approx_min": 5,
+      "pg_asks": "Presses for the core problem in the dream",
+      "question_type": "probing",
+      "trigger": "Dreamer gives surface-level worry about others' opinions",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 1
+    },
+    {
+      "timestamp_approx_min": 6,
+      "pg_asks": "Challenges dreamer to state what she pretends and what follows",
+      "question_type": "challenging",
+      "trigger": "Dreamer identifies pretending",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "confirm",
+      "phase": "scenes",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 7,
+      "pg_asks": "Asks what dreamer gets for pretending",
+      "question_type": "probing",
+      "trigger": "Pretending mechanism identified",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 8,
+      "pg_asks": "Identifies stated goal and asks if it was achieved",
+      "question_type": "clarifying",
+      "trigger": "Dreamer mentions learning aspiration",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 9,
+      "pg_asks": "Names the strategy as a failure and asks dreamer's reaction",
+      "question_type": "challenging",
+      "trigger": "Dreamer confirms she learned nothing",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "resistant",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 12,
+      "pg_asks": "Asks dreamer to grade her own recovery questions",
+      "question_type": "challenging",
+      "trigger": "Dreamer describes her fake questions to the speaker",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "confirm",
+      "phase": "analysis",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 14,
+      "pg_asks": "Asks what kind of information her questions would actually yield",
+      "question_type": "probing",
+      "trigger": "Dreamer's superficial questions identified",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 17,
+      "pg_asks": "Asks whether dreamer's questions are designed to recover content",
+      "question_type": "challenging",
+      "trigger": "Audience interjection about question quality",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 18,
+      "pg_asks": "Confirms dreamer is pretending and names it as putting on a mask",
+      "question_type": "naming",
+      "trigger": "Dreamer admits pretending",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "confirm",
+      "phase": "analysis",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 19,
+      "pg_asks": "Contrasts pretending state with truth-telling state",
+      "question_type": "connecting",
+      "trigger": "Dreamer describes telling stranger about falling asleep",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 20,
+      "pg_asks": "Asks about the worry state of mind that follows truth-telling",
+      "question_type": "probing",
+      "trigger": "Dreamer describes feeling need to not be offensive",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 23,
+      "pg_asks": "Asks what the pretending state was like psychically for the dreamer",
+      "question_type": "probing",
+      "trigger": "Dreamer admits she wasn't aware of pretending at the time",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 25,
+      "pg_asks": "Asks about the emotional quality of revealing truth",
+      "question_type": "probing",
+      "trigger": "Dreamer names pretending as creepy and phony",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 28,
+      "pg_asks": "Asks what dismissing the encounter felt like",
+      "question_type": "probing",
+      "trigger": "Dreamer describes dismissing as closure",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 33,
+      "pg_asks": "Revisits truth-telling moment and its emotional consequence",
+      "question_type": "connecting",
+      "trigger": "Recap of dream states",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 34,
+      "pg_asks": "Asks what it feels like to tell someone the truth about what she's going through",
+      "question_type": "probing",
+      "trigger": "Dreamer identifies regret after truth-telling",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 36,
+      "pg_asks": "Challenges dreamer about the strategy of never revealing truth about oneself",
+      "question_type": "challenging",
+      "trigger": "Dreamer confirms fear of offending through self-revelation",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 37,
+      "pg_asks": "Offers to trace the pattern back to mother",
+      "question_type": "redirecting",
+      "trigger": "Dreamer acknowledges the pattern operates her whole life",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "open",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 4
+    },
+    {
+      "timestamp_approx_min": 38,
+      "pg_asks": "Asks what it would be like as a child to share feelings with mother",
+      "question_type": "probing",
+      "trigger": "Dreamer agrees to explore origin",
+      "trigger_type": "open",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 4
+    },
+    {
+      "timestamp_approx_min": 39,
+      "pg_asks": "Presses for more detail on mother's reaction to child's self-expression",
+      "question_type": "probing",
+      "trigger": "Dreamer says mother would get worried and scared",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 4
+    },
+    {
+      "timestamp_approx_min": 41,
+      "pg_asks": "Asks about the effect on dreamer when mother reacted with fear",
+      "question_type": "probing",
+      "trigger": "Dreamer recounts TV contest story",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 4
+    },
+    {
+      "timestamp_approx_min": 43,
+      "pg_asks": "Asks dreamer to name what mother was doing to her in that moment",
+      "question_type": "naming",
+      "trigger": "Dreamer describes mother's prohibition",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "confirm",
+      "phase": "cross_exam",
+      "depth_level": 4
+    },
+    {
+      "timestamp_approx_min": 48,
+      "pg_asks": "Asks what it means that a few words had such lifelong power",
+      "question_type": "challenging",
+      "trigger": "Dreamer contrasts mother's contradictory messages",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 5
+    },
+    {
+      "timestamp_approx_min": 50,
+      "pg_asks": "Notes dreamer is currently violating the old teaching by revealing herself",
+      "question_type": "connecting",
+      "trigger": "Dreamer acknowledges the origin pattern",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "confirm",
+      "phase": "integration",
+      "depth_level": 5
+    }
+  ],
+
+  "beliefs_identified": [
+    {
+      "id": 1,
+      "dreamer": "D1",
+      "statement_paraphrase": "Self-revelation is offensive to others and should be avoided",
+      "belief_category": "safety",
+      "origin_traced": true,
+      "origin_scene_paraphrase": "Mother reacted with fear and prohibition when child (age 8) shared her intention to participate in a TV yelling contest. Mother's words effectively silenced the dreamer's self-expression.",
+      "origin_period": "childhood",
+      "depth_layer": 4,
+      "parent_belief_id": null,
+      "deflation_status": "partial",
+      "deflation_trigger": "Recognizing the mother's reaction as the origin rather than a truth about self-revelation. Seeing that she is currently violating the old teaching by revealing herself in session.",
+      "examined_in_phases": ["analysis", "cross_exam", "integration"]
+    },
+    {
+      "id": 2,
+      "dreamer": "D1",
+      "statement_paraphrase": "Pretending to be interested is a viable strategy for social engagement",
+      "belief_category": "control",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 2,
+      "parent_belief_id": 1,
+      "deflation_status": "identified",
+      "deflation_trigger": "Naming the strategy as a failure when the learning goal was not achieved",
+      "examined_in_phases": ["scenes", "analysis"]
+    },
+    {
+      "id": 3,
+      "dreamer": "D1",
+      "statement_paraphrase": "Telling the truth about one's inner experience imposes on others",
+      "belief_category": "belonging",
+      "origin_traced": true,
+      "origin_scene_paraphrase": "Mother's worried, scared, offended reaction to child's self-expression taught that disclosure burdens others.",
+      "origin_period": "childhood",
+      "depth_layer": 4,
+      "parent_belief_id": 1,
+      "deflation_status": "partial",
+      "deflation_trigger": "Dreamer notices she is currently doing what the belief prohibits — sharing truth about herself — and it feels different now.",
+      "examined_in_phases": ["analysis", "cross_exam"]
+    },
+    {
+      "id": 4,
+      "dreamer": "D1",
+      "statement_paraphrase": "Acting on personal desires independently is forbidden",
+      "belief_category": "freedom",
+      "origin_traced": true,
+      "origin_scene_paraphrase": "Mother's prohibition 'you can't do that' in response to child's independent TV contest participation. Family did not attend to support her.",
+      "origin_period": "childhood",
+      "depth_layer": 4,
+      "parent_belief_id": 1,
+      "deflation_status": "under_examination",
+      "deflation_trigger": "Recognizing the contradiction between mother's empowerment messages and prohibition messages",
+      "examined_in_phases": ["cross_exam"]
+    }
+  ],
+
+  "resistance_moments": [
+    {
+      "timestamp_approx_min": 4,
+      "dreamer": "D1",
+      "resistance_type": "intellectualization",
+      "pg_response_type": "redirect",
+      "resolved": true,
+      "resolution_method": "Pierre redirected back to dream content, separating life interpretation from dream analysis"
+    },
+    {
+      "timestamp_approx_min": 9,
+      "dreamer": "D1",
+      "resistance_type": "deflection",
+      "pg_response_type": "hold",
+      "resolved": true,
+      "resolution_method": "Pierre held the frame: the strategy is a failure, naming it directly rather than allowing escape"
+    },
+    {
+      "timestamp_approx_min": 16,
+      "dreamer": "D1",
+      "resistance_type": "deflection",
+      "pg_response_type": "release",
+      "resolved": true,
+      "resolution_method": "Audience member offered alternative reading; dreamer defended ownership of dream analysis. Pierre gracefully released control of approach momentarily."
+    },
+    {
+      "timestamp_approx_min": 45,
+      "dreamer": "D1",
+      "resistance_type": "justification",
+      "pg_response_type": "gentle_push",
+      "resolved": true,
+      "resolution_method": "Dreamer tried to excuse mother as 'just reacting.' Pierre pressed: what was the effect on you regardless of her intent?"
+    }
+  ],
+
+  "breakthrough_markers": [
+    {
+      "timestamp_approx_min": 23,
+      "dreamer": "D1",
+      "marker_type": "spontaneous_insight",
+      "before_state": "Intellectual analysis of dream mechanics",
+      "after_state": "Emotional recognition: functioning through pretense felt creepy and wasteful",
+      "associated_belief_id": 2,
+      "depth_at_breakthrough": 3
+    },
+    {
+      "timestamp_approx_min": 25,
+      "dreamer": "D1",
+      "marker_type": "vocabulary_shift",
+      "before_state": "Analytical descriptions",
+      "after_state": "Spontaneous naming: phony, vague, cheerleader — emotional vocabulary emerging",
+      "associated_belief_id": 2,
+      "depth_at_breakthrough": 3
+    },
+    {
+      "timestamp_approx_min": 34,
+      "dreamer": "D1",
+      "marker_type": "emotional_shift",
+      "before_state": "Intellectual understanding of pretense",
+      "after_state": "Visceral recognition: feels like imposing on others, wants to apologize and stop talking",
+      "associated_belief_id": 3,
+      "depth_at_breakthrough": 3
+    },
+    {
+      "timestamp_approx_min": 38,
+      "dreamer": "D1",
+      "marker_type": "connection",
+      "before_state": "Pattern seen as personal flaw",
+      "after_state": "Pattern traced to mother's reaction — origin located outside self",
+      "associated_belief_id": 1,
+      "depth_at_breakthrough": 4
+    },
+    {
+      "timestamp_approx_min": 42,
+      "dreamer": "D1",
+      "marker_type": "spontaneous_insight",
+      "before_state": "Recounting childhood memory",
+      "after_state": "Recognition that she lived out mother's prediction — internalized the prohibition",
+      "associated_belief_id": 4,
+      "depth_at_breakthrough": 4
+    },
+    {
+      "timestamp_approx_min": 43,
+      "dreamer": "D1",
+      "marker_type": "laughter",
+      "before_state": "Serious exploration of mother's prohibition",
+      "after_state": "Amazed recognition of how powerful and quick the prohibition was — glad she called before telling",
+      "associated_belief_id": 4,
+      "depth_at_breakthrough": 4
+    },
+    {
+      "timestamp_approx_min": 50,
+      "dreamer": "D1",
+      "marker_type": "connection",
+      "before_state": "Struggling with giving voice",
+      "after_state": "Relief at having a concrete origin to reference — 'I just thought it was something about me'",
+      "associated_belief_id": 1,
+      "depth_at_breakthrough": 5
+    }
+  ],
+
+  "emotional_arc": [
+    {"approx_min": 0, "dreamer": "D1", "state": "openness"},
+    {"approx_min": 4, "dreamer": "D1", "state": "confusion"},
+    {"approx_min": 6, "dreamer": "D1", "state": "frustration"},
+    {"approx_min": 9, "dreamer": "D1", "state": "resistance"},
+    {"approx_min": 14, "dreamer": "D1", "state": "curiosity"},
+    {"approx_min": 23, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 25, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 29, "dreamer": "D1", "state": "frustration"},
+    {"approx_min": 34, "dreamer": "D1", "state": "fear"},
+    {"approx_min": 37, "dreamer": "D1", "state": "openness"},
+    {"approx_min": 38, "dreamer": "D1", "state": "anxiety"},
+    {"approx_min": 42, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 45, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 50, "dreamer": "D1", "state": "relief"},
+    {"approx_min": 52, "dreamer": "D1", "state": "clarity"}
+  ],
+
+  "logos_indicators": [
+    {
+      "timestamp_approx_min": 23,
+      "dreamer": "D1",
+      "indicator_type": "ego_free_description",
+      "context_paraphrase": "Dreamer spontaneously names her own functioning as creepy and a waste — no self-protective filtering"
+    },
+    {
+      "timestamp_approx_min": 25,
+      "dreamer": "D1",
+      "indicator_type": "spontaneous_action",
+      "context_paraphrase": "Dreamer spontaneously generates emotional vocabulary (phony, vague, cheerleader) without being prompted for specific words"
+    },
+    {
+      "timestamp_approx_min": 34,
+      "dreamer": "D1",
+      "indicator_type": "appropriate_response",
+      "context_paraphrase": "Dreamer accurately names the feeling of self-revelation as imposing on others — appropriate emotional response rather than defended intellectualization"
+    },
+    {
+      "timestamp_approx_min": 43,
+      "dreamer": "D1",
+      "indicator_type": "natural_clarity",
+      "context_paraphrase": "Dreamer spontaneously recognizes the irony and power of mother's prohibition with amusement — ego-free assessment of her own history"
+    },
+    {
+      "timestamp_approx_min": 50,
+      "dreamer": "D1",
+      "indicator_type": "no_explanation_needed",
+      "context_paraphrase": "Dreamer recognizes the origin pattern and expresses relief without needing to intellectualize or explain it away"
+    }
+  ],
+
+  "session_dynamics": {
+    "pg_style": {
+      "question_frequency": "high",
+      "silence_usage": "rare",
+      "humor_level": "light",
+      "directiveness": "high",
+      "challenge_level": "high"
+    },
+    "dreamer_engagement": {
+      "D1": {
+        "openness": "medium",
+        "intellectual_tendency": "high",
+        "emotional_access": "medium",
+        "resistance_frequency": "medium"
+      }
+    },
+    "session_arc": "linear_deep",
+    "depth_achieved": 5,
+    "beliefs_examined": 4,
+    "beliefs_deflated": 1,
+    "notable_patterns": [
+      "Pierre spent the entire 52-minute session on one dream — unusual depth commitment",
+      "Four-states-of-mind extraction method used to map the dream's emotional logic",
+      "Origin tracing via direct childhood memory recall rather than symbolic interpretation",
+      "Audience member interjected to defend dreamer's questions — dreamer asserted ownership of her own analysis",
+      "Integration achieved when Pierre pointed out dreamer is currently violating the old teaching by revealing herself in session",
+      "Mother's contradictory messages (empowering stories vs. prohibitive reactions) identified as the structural tension"
+    ]
+  },
+
+  "cross_session_connections": {
+    "references_prior_session": false,
+    "recurring_elements": [],
+    "belief_evolution": []
+  },
+
+  "dream_elements": [
+    {
+      "dreamer": "D1",
+      "element_type": "location",
+      "description_paraphrase": "Large shopping center with a man giving a talk against a wall",
+      "emotional_charge": 3,
+      "associated_emotion": "vague curiosity",
+      "associated_belief_id": 2,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "character",
+      "description_paraphrase": "Man giving a computer talk at a makeshift stand",
+      "emotional_charge": 4,
+      "associated_emotion": "detached interest",
+      "associated_belief_id": 2,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "Falling asleep during the talk",
+      "emotional_charge": 7,
+      "associated_emotion": "embarrassment",
+      "associated_belief_id": 1,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "Asking fake questions to appear interested",
+      "emotional_charge": 5,
+      "associated_emotion": "shame",
+      "associated_belief_id": 2,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "character",
+      "description_paraphrase": "Stranger met while leaving the shopping center",
+      "emotional_charge": 6,
+      "associated_emotion": "anxiety about offending",
+      "associated_belief_id": 3,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "Telling the stranger she had fallen asleep",
+      "emotional_charge": 8,
+      "associated_emotion": "regret and fear of offense",
+      "associated_belief_id": 1,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "character",
+      "description_paraphrase": "Another person from the event encountered while walking",
+      "emotional_charge": 3,
+      "associated_emotion": "hollow social obligation",
+      "associated_belief_id": 2,
+      "examined": false
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "Walking away and dismissing the whole encounter",
+      "emotional_charge": 4,
+      "associated_emotion": "relief at closure",
+      "associated_belief_id": null,
+      "examined": true
+    }
+  ],
+
+  "scene_structure": [
+    {
+      "dreamer": "D1",
+      "scene_number": 1,
+      "description_paraphrase": "Dreamer arrives at shopping center talk on computers, stands with others, falls asleep",
+      "emotional_peak": "Embarrassment upon waking and realizing everyone has left",
+      "key_action": "Falls asleep during talk she joined hoping to learn something",
+      "pg_focus": "Yes — used to identify the pretending mechanism and the failed learning goal"
+    },
+    {
+      "dreamer": "D1",
+      "scene_number": 2,
+      "description_paraphrase": "Dreamer asks fake questions to the speaker after the talk to maintain pretense of having been attentive",
+      "emotional_peak": "Relief at walking away from the pretense",
+      "key_action": "Asks superficial questions while pretending to have been present",
+      "pg_focus": "Yes — used to extract the pretending state of mind and the failure of the recovery strategy"
+    },
+    {
+      "dreamer": "D1",
+      "scene_number": 3,
+      "description_paraphrase": "Dreamer encounters someone outside the shopping center, asks about the talk, admits she fell asleep",
+      "emotional_peak": "Anxiety and regret after revealing she fell asleep — fears offense",
+      "key_action": "Truth-telling moment followed by worry about being offensive",
+      "pg_focus": "Yes — central to analysis. Used to extract states 2 and 3 (truth-revealing and worrying) and trace to origin"
+    },
+    {
+      "dreamer": "D1",
+      "scene_number": 4,
+      "description_paraphrase": "Dreamer encounters another person from the event, attempts more social engagement, then dismisses the whole thing",
+      "emotional_peak": "Dismissal and relief — closure on failed learning quest",
+      "key_action": "Runs into third person, briefly engages, then walks away",
+      "pg_focus": "Yes — used to extract the dismissal state and its connection to the learning pattern"
+    }
+  ]
+}

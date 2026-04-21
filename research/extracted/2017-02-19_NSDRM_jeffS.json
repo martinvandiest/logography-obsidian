@@ -1,0 +1,497 @@
+{
+  "meta": {
+    "session_id": "20170219NSDRM",
+    "date": "2017-02-19",
+    "duration_min": 28.5,
+    "dreamer_count": 1,
+    "dreamers": ["D1: JeffS"],
+    "session_types": ["dream_exploration", "midwifery", "discussion"]
+  },
+
+  "phases": [
+    {
+      "phase": "terrain",
+      "dreamer": "D1",
+      "start_approx_min": 0,
+      "end_approx_min": 2,
+      "duration_min": 2,
+      "steps_completed": ["opening", "dream_narration"],
+      "completed": true,
+      "notes": "Dreamer presents dream with unseen threat, steps he cannot see, raising arms to fight back. Self-reflective opening — notes fear is present but not stopping him."
+    },
+    {
+      "phase": "scenes",
+      "dreamer": "D1",
+      "start_approx_min": 2,
+      "end_approx_min": 6,
+      "duration_min": 4,
+      "steps_completed": ["scene_selection", "scene_exploration"],
+      "completed": true,
+      "notes": "Focus on fleeting realization moment — the turning point of the dream. Dreamer cannot describe the moment itself, only what follows. Pierre probes the phenomenology of the decision."
+    },
+    {
+      "phase": "analysis",
+      "dreamer": "D1",
+      "start_approx_min": 6,
+      "end_approx_min": 13,
+      "duration_min": 7,
+      "steps_completed": ["deepening", "belief_identification", "pattern_recognition"],
+      "completed": true,
+      "notes": "Extended exploration of the moment of decision: diving board and parachute analogies. Discovery that ego/self-image is absent in the moment. Dreamer describes it as spontaneous, intelligible, appropriate — but inexplicable. Pierre identifies this as freedom from image of self."
+    },
+    {
+      "phase": "cross_exam",
+      "dreamer": "D1",
+      "start_approx_min": 13,
+      "end_approx_min": 17.5,
+      "duration_min": 4.5,
+      "steps_completed": ["naming_resistance", "connecting"],
+      "completed": true,
+      "notes": "Pierre invites naming the state. Dreamer resists labeling — doesn't want to put a name on it. Pierre names it as highest excellence (chai), references satori from Three Pillars of Zen. Dreamer acknowledges but remains resistant to formalization."
+    },
+    {
+      "phase": "integration",
+      "dreamer": "D1",
+      "start_approx_min": 17.5,
+      "end_approx_min": 28.5,
+      "duration_min": 11,
+      "steps_completed": ["connecting_to_practice", "application_to_life", "closing"],
+      "completed": true,
+      "notes": "Dreamer reveals he has been practicing Pierre's question ('what is looking?') for weeks. Barbara's question about bringing the state home. Dreamer reports increasingly longer periods of ego-free action with family. War cry emerges as symbol of courage/action. Session closes with family dynamics and the ongoing practice."
+    }
+  ],
+
+  "questions": [
+    {
+      "timestamp_approx_min": 0.5,
+      "pg_asks": "Opening inquiry — what do you make of the dream?",
+      "question_type": "opening",
+      "trigger": "Session begins; dreamer has presented dream content",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "terrain",
+      "depth_level": 1
+    },
+    {
+      "timestamp_approx_min": 2,
+      "pg_asks": "Clarifying — why fear for something not yet seen?",
+      "question_type": "clarifying",
+      "trigger": "Dreamer describes extreme fear of unseen threat",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "deeper",
+      "phase": "terrain",
+      "depth_level": 1
+    },
+    {
+      "timestamp_approx_min": 3,
+      "pg_asks": "Probing the turning point — what was the fleeting realization like?",
+      "question_type": "probing",
+      "trigger": "Dreamer describes a fleeting realization in the dream",
+      "trigger_type": "descriptive",
+      "dreamer_response_type": "confused",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 4.5,
+      "pg_asks": "Deepening — is there nothing describable at that dream moment?",
+      "question_type": "probing",
+      "trigger": "Dreamer says he cannot describe the moment of realization",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "scenes",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 6.5,
+      "pg_asks": "Probing — what is the moment of decision like (diving board analogy)?",
+      "question_type": "probing",
+      "trigger": "Dreamer compares decision to diving board and parachute jumps",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 9.5,
+      "pg_asks": "Challenging — was there any experience of a separate ego or self-image in the moment?",
+      "question_type": "challenging",
+      "trigger": "Dreamer describes watching himself like behaviorism/Pachinko machine",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "confirm",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 11,
+      "pg_asks": "Connecting — would you like to find yourself in similar circumstances with perfectly appropriate spontaneous action?",
+      "question_type": "connecting",
+      "trigger": "Dreamer confirms ego-free state",
+      "trigger_type": "breakthrough",
+      "dreamer_response_type": "emotional",
+      "follow_up_type": "deeper",
+      "phase": "analysis",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 13.5,
+      "pg_asks": "Redirecting — would you like to be in that prepotent state despite what comes with it?",
+      "question_type": "redirecting",
+      "trigger": "Dreamer expresses ambivalence about what accompanies the state",
+      "trigger_type": "resistant",
+      "dreamer_response_type": "resistant",
+      "follow_up_type": "deeper",
+      "phase": "cross_exam",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 15.5,
+      "pg_asks": "Naming — what do you call that highest excellence?",
+      "question_type": "naming",
+      "trigger": "Dreamer arrives at 'excellence' as descriptor",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "resistant",
+      "follow_up_type": "release",
+      "phase": "cross_exam",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 17.5,
+      "pg_asks": "Connecting — how does satori relate to being image-free?",
+      "question_type": "connecting",
+      "trigger": "Pierre references satori and Three Pillars of Zen",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "intellectual",
+      "follow_up_type": "lateral",
+      "phase": "integration",
+      "depth_level": 3
+    },
+    {
+      "timestamp_approx_min": 23.5,
+      "pg_asks": "Redirecting — could you bring that state home to dinner?",
+      "question_type": "redirecting",
+      "trigger": "Discussion shifts to practical application",
+      "trigger_type": "intellectual",
+      "dreamer_response_type": "descriptive",
+      "follow_up_type": "deeper",
+      "phase": "integration",
+      "depth_level": 2
+    },
+    {
+      "timestamp_approx_min": 26,
+      "pg_asks": "Challenging — can you drop the last string of ego and speak completely appropriately to the moment?",
+      "question_type": "challenging",
+      "trigger": "Dreamer describes varying family responses",
+      "trigger_type": "emotional",
+      "dreamer_response_type": "insightful",
+      "follow_up_type": "confirm",
+      "phase": "integration",
+      "depth_level": 3
+    }
+  ],
+
+  "beliefs_identified": [
+    {
+      "id": 1,
+      "dreamer": "D1",
+      "statement_paraphrase": "Fear is appropriate even for unseen/unknown threats",
+      "belief_category": "safety",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 1,
+      "parent_belief_id": null,
+      "deflation_status": "under_examination",
+      "deflation_trigger": "Pierre's question about why fear something not yet seen",
+      "examined_in_phases": ["terrain", "scenes"]
+    },
+    {
+      "id": 2,
+      "dreamer": "D1",
+      "statement_paraphrase": "The moment of decision is unknowable and cannot be described",
+      "belief_category": "control",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 2,
+      "parent_belief_id": null,
+      "deflation_status": "partial",
+      "deflation_trigger": "Pierre points out the dreamer actually gave a vivid description (foot moving, lights going out and back on)",
+      "examined_in_phases": ["scenes", "analysis"]
+    },
+    {
+      "id": 3,
+      "dreamer": "D1",
+      "statement_paraphrase": "Putting a label or name on the ego-free state would diminish or distort it",
+      "belief_category": "control",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 3,
+      "parent_belief_id": null,
+      "deflation_status": "resisted",
+      "deflation_trigger": "Pierre's naming question at ~15 minutes; dreamer actively resists",
+      "examined_in_phases": ["cross_exam"]
+    },
+    {
+      "id": 4,
+      "dreamer": "D1",
+      "statement_paraphrase": "The ego-free state requires the ego to be surrendered or turned in",
+      "belief_category": "freedom",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 2,
+      "parent_belief_id": null,
+      "deflation_status": "under_examination",
+      "deflation_trigger": "Humor exchange about turning in the ego with no credits or recycling fees",
+      "examined_in_phases": ["analysis", "cross_exam"]
+    },
+    {
+      "id": 5,
+      "dreamer": "D1",
+      "statement_paraphrase": "Bringing ego-free honesty to family will provoke anger and negative reactions",
+      "belief_category": "belonging",
+      "origin_traced": false,
+      "origin_scene_paraphrase": null,
+      "origin_period": "unknown",
+      "depth_layer": 2,
+      "parent_belief_id": null,
+      "deflation_status": "partial",
+      "deflation_trigger": "Dreamer reports some family members respond with relief and communion; the anger is acknowledged but not feared",
+      "examined_in_phases": ["integration"]
+    }
+  ],
+
+  "resistance_moments": [
+    {
+      "timestamp_approx_min": 1.5,
+      "dreamer": "D1",
+      "resistance_type": "intellectualization",
+      "pg_response_type": "redirect",
+      "resolved": true,
+      "resolution_method": "Pierre redirects from dreamer's analytical commentary back to what is given in the dream"
+    },
+    {
+      "timestamp_approx_min": 9.5,
+      "dreamer": "D1",
+      "resistance_type": "deflection",
+      "pg_response_type": "hold",
+      "resolved": true,
+      "resolution_method": "Dreamer tries to turn Pierre's question back; Pierre holds firm and returns to his question"
+    },
+    {
+      "timestamp_approx_min": 16,
+      "dreamer": "D1",
+      "resistance_type": "label_seeking",
+      "pg_response_type": "release",
+      "resolved": true,
+      "resolution_method": "Dreamer cannot find a name; Pierre provides satori as reference point and releases the pressure"
+    }
+  ],
+
+  "breakthrough_markers": [
+    {
+      "timestamp_approx_min": 5.75,
+      "dreamer": "D1",
+      "marker_type": "spontaneous_insight",
+      "before_state": "Unable to describe the moment of decision; stuck on the unknowability",
+      "after_state": "Recognizes the insight gave him a strategy and put him into action — went from rest to motion",
+      "associated_belief_id": 2,
+      "depth_at_breakthrough": 2
+    },
+    {
+      "timestamp_approx_min": 10.5,
+      "dreamer": "D1",
+      "marker_type": "connection",
+      "before_state": "Describing decision phenomenologically (foot moving, watching behavior)",
+      "after_state": "Confirms there is no ego, no image of self in the moment — just action. Pierre names it as freedom from image.",
+      "associated_belief_id": 4,
+      "depth_at_breakthrough": 3
+    },
+    {
+      "timestamp_approx_min": 20,
+      "dreamer": "D1",
+      "marker_type": "connection",
+      "before_state": "Questioning whether the practice of 'what is looking?' does anything",
+      "after_state": "Reveals the dream may be answering that very question — connects the dream state to his ongoing practice",
+      "associated_belief_id": 2,
+      "depth_at_breakthrough": 3
+    },
+    {
+      "timestamp_approx_min": 27.5,
+      "dreamer": "D1",
+      "marker_type": "connection",
+      "before_state": "Discussing fear of bringing ego-free state home to family",
+      "after_state": "Reports increasingly longer periods of being in that state with family; not afraid to say whatever he sees to father, mother, sisters",
+      "associated_belief_id": 5,
+      "depth_at_breakthrough": 3
+    }
+  ],
+
+  "emotional_arc": [
+    {"approx_min": 0, "dreamer": "D1", "state": "anxiety"},
+    {"approx_min": 1, "dreamer": "D1", "state": "confusion"},
+    {"approx_min": 3, "dreamer": "D1", "state": "frustration"},
+    {"approx_min": 5, "dreamer": "D1", "state": "curiosity"},
+    {"approx_min": 7, "dreamer": "D1", "state": "openness"},
+    {"approx_min": 10, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 13, "dreamer": "D1", "state": "resistance"},
+    {"approx_min": 16, "dreamer": "D1", "state": "frustration"},
+    {"approx_min": 20, "dreamer": "D1", "state": "insight"},
+    {"approx_min": 24, "dreamer": "D1", "state": "openness"},
+    {"approx_min": 27, "dreamer": "D1", "state": "clarity"},
+    {"approx_min": 28.5, "dreamer": "D1", "state": "calm"}
+  ],
+
+  "logos_indicators": [
+    {
+      "timestamp_approx_min": 5.75,
+      "dreamer": "D1",
+      "indicator_type": "spontaneous_action",
+      "context_paraphrase": "Dreamer describes the insight giving him a strategy and putting him into motion — from rest to action without conscious deliberation"
+    },
+    {
+      "timestamp_approx_min": 10.25,
+      "dreamer": "D1",
+      "indicator_type": "ego_free_description",
+      "context_paraphrase": "Dreamer confirms there is no ego or self-image in the moment of decision — just the action itself (foot, arms, do)"
+    },
+    {
+      "timestamp_approx_min": 11.5,
+      "dreamer": "D1",
+      "indicator_type": "appropriate_response",
+      "context_paraphrase": "Pierre names the state as perfectly appropriate to the circumstance — the action fits the situation without deliberation"
+    },
+    {
+      "timestamp_approx_min": 13,
+      "dreamer": "D1",
+      "indicator_type": "natural_clarity",
+      "context_paraphrase": "Dreamer describes the state as spontaneous, intelligible, and appropriate — a natural way of being"
+    },
+    {
+      "timestamp_approx_min": 27.5,
+      "dreamer": "D1",
+      "indicator_type": "effortless_choice",
+      "context_paraphrase": "Dreamer reports being in ego-free state with family for increasingly longer periods — not afraid to speak what he sees regardless of response"
+    }
+  ],
+
+  "session_dynamics": {
+    "pg_style": {
+      "question_frequency": "medium",
+      "silence_usage": "frequent",
+      "humor_level": "moderate",
+      "directiveness": "medium",
+      "challenge_level": "medium"
+    },
+    "dreamer_engagement": {
+      "D1": {
+        "openness": "high",
+        "intellectual_tendency": "high",
+        "emotional_access": "medium",
+        "resistance_frequency": "medium"
+      }
+    },
+    "session_arc": "linear_deep",
+    "depth_achieved": 3,
+    "beliefs_examined": 5,
+    "beliefs_deflated": 1,
+    "notable_patterns": [
+      "Dreamer has sophisticated self-reflective capacity — presents dream with built-in analysis",
+      "Strong pattern of intellectual engagement that both aids and obstructs deeper access",
+      "Dreamer has been practicing Pierre's 'what is looking?' question independently for weeks — unusual commitment",
+      "Session moves from dream content to living practice — unusual integration depth",
+      "Humor used effectively to defuse tension around ego-surrender topic",
+      "Naming resistance is a significant structural feature — dreamer wants the state but resists formalization",
+      "Multiple group members participate in discussion phase (Barbara, Rhonda) — group dynamic enriches integration"
+    ]
+  },
+
+  "cross_session_connections": {
+    "references_prior_session": true,
+    "recurring_elements": [
+      "Steps the dreamer cannot see — appeared in at least one prior dream",
+      "California falling into the ocean dream — prior session reference",
+      "Ongoing practice of 'what is looking?' question since Bizant Lodge talk",
+      "Barbara and Rhonda's practice methods referenced"
+    ],
+    "belief_evolution": [
+      "Fear-of-unknown belief appears to have evolved — dreamer now acts despite fear rather than being stopped by it",
+      "Practice of ego-free inquiry has moved from intellectual exercise to embodied lived experience"
+    ]
+  },
+
+  "dream_elements": [
+    {
+      "dreamer": "D1",
+      "element_type": "anomaly",
+      "description_paraphrase": "Unseen threat approaching from around a corner — never visually encountered",
+      "emotional_charge": 8,
+      "associated_emotion": "fear",
+      "associated_belief_id": 1,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "object",
+      "description_paraphrase": "Steps that cannot be seen — recurring element from prior dreams",
+      "emotional_charge": 6,
+      "associated_emotion": "confusion",
+      "associated_belief_id": 1,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "Raising arms to fight back — preparing for confrontation despite fear",
+      "emotional_charge": 7,
+      "associated_emotion": "courage",
+      "associated_belief_id": 4,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "action",
+      "description_paraphrase": "A war cry — half fear and half battle cry — symbol of action and courage",
+      "emotional_charge": 8,
+      "associated_emotion": "bravery",
+      "associated_belief_id": 5,
+      "examined": true
+    },
+    {
+      "dreamer": "D1",
+      "element_type": "transition",
+      "description_paraphrase": "Fleeting realization that opens a strategy and puts dreamer into motion — the turning point",
+      "emotional_charge": 9,
+      "associated_emotion": "insight",
+      "associated_belief_id": 2,
+      "examined": true
+    }
+  ],
+
+  "scene_structure": [
+    {
+      "dreamer": "D1",
+      "scene_number": 1,
+      "description_paraphrase": "Dreamer in a threatening environment with unseen danger approaching; steps he cannot see; preparing to raise arms",
+      "emotional_peak": "Fear at maximum as threat approaches unseen",
+      "key_action": "Raises arms to fight back despite extreme fear",
+      "pg_focus": "Brief — used as launching point for deeper inquiry"
+    },
+    {
+      "dreamer": "D1",
+      "scene_number": 2,
+      "description_paraphrase": "The moment of fleeting realization — a strategy opens spontaneously and the dreamer goes from rest to motion",
+      "emotional_peak": "Insight/relief when the realization occurs and action follows",
+      "key_action": "Acts on the realization without conscious decision-making",
+      "pg_focus": "Primary focus — extended analysis of this moment across the session"
+    }
+  ]
+}
