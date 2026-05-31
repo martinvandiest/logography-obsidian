@@ -1,0 +1,80 @@
+/* Dreamaster Plugin Styles */
+
+.dreamaster-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px;
+}
+
+.dreamaster-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.dreamaster-message {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  max-width: 85%;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.dreamaster-message.user {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  margin-left: auto;
+  text-align: right;
+}
+
+.dreamaster-message.assistant {
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  margin-right: auto;
+}
+
+.dreamaster-phase-indicator {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.dreamaster-input-area {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.dreamaster-input {
+  flex: 1;
+  resize: none;
+  min-height: 40px;
+  max-height: 120px;
+  font-family: var(--font-interface);
+  font-size: 14px;
+}
+
+.dreamaster-send-btn {
+  align-self: flex-end;
+  padding: 8px 16px;
+}
+
+.dreamaster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 8px;
+}
+
+.dreamaster-new-session-btn {
+  font-size: 12px;
+  padding: 4px 8px;
+}

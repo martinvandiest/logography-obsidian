@@ -1,0 +1,9 @@
+{
+  "id": "dreamaster",
+  "name": "Dreamaster",
+  "version": "0.1.0",
+  "description": "AI dream analysis using Philosophical Midwifery — Pierre Grimes' Socratic method for self-examination through dreams",
+  "author": "protostate",
+  "minAppVersion": "1.0.0",
+  "isDesktopOnly": false
+}
