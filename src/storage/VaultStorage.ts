@@ -4,8 +4,8 @@
 import { App, TFile, TFolder, Vault } from "obsidian";
 import { SessionState } from "../state/PhaseMachine";
 
-const SESSIONS_FOLDER = "Dreamaster/Sessions";
-const PATTERNS_FOLDER = "Dreamaster/Patterns";
+const SESSIONS_FOLDER = "Logography/Sessions";
+const PATTERNS_FOLDER = "Logography/Patterns";
 
 export class VaultStorage {
   private vault: Vault;
@@ -65,7 +65,7 @@ export class VaultStorage {
   // Save author memory summary to patterns folder
   async saveAuthorMemory(summary: string): Promise<void> {
     const filepath = `${PATTERNS_FOLDER}/author-memory.md`;
-    const content = `# Dreamaster — Author Memory\n\n*Auto-generated cross-session pattern summary. Updated after each session.*\n\n${summary}\n\n---\n*Last updated: ${new Date().toISOString()}*\n`;
+    const content = `# Logography — Author Memory\n\n*Auto-generated cross-session pattern summary. Updated after each session.*\n\n${summary}\n\n---\n*Last updated: ${new Date().toISOString()}*\n`;
 
     const existing = this.vault.getAbstractFileByPath(filepath);
     if (existing instanceof TFile) {
@@ -117,7 +117,7 @@ export class VaultStorage {
 
   private formatSessionAsMarkdown(state: SessionState): string {
     const lines: string[] = [
-      `# Dreamaster Session`,
+      `# Logography Session`,
       ``,
       `**Date:** ${new Date().toLocaleDateString()}`,
       `**Type:** ${state.entryType || "unknown"}`,

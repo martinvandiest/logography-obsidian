@@ -1,14 +1,14 @@
-// Dreamaster Chat View — sidebar pane for dream analysis
+// Logography Chat View — sidebar pane for dream analysis
 import { ItemView, WorkspaceLeaf, MarkdownView } from "obsidian";
-import type DreamasterPlugin from "../main";
+import type LogographyPlugin from "../main";
 import { LLMMessage } from "../llm/OpenRouterClient";
 import { createInitialState, evaluateTransition, serializeSessionContext, Phase, SessionState } from "../state/PhaseMachine";
 import { buildMasterSystemPrompt, buildPhasePrompt, DREAM_EXTRACTOR_PROMPT, CRISIS_KEYWORDS, CRISIS_RESPONSE } from "../prompts/master";
 
-export const VIEW_TYPE_DREAMASTER = "dreamaster-chat-view";
+export const VIEW_TYPE_LOGOGRAPHY = "logography-chat-view";
 
-export class DreamasterView extends ItemView {
-  plugin: DreamasterPlugin;
+export class LogographyView extends ItemView {
+  plugin: LogographyPlugin;
   private messagesEl: HTMLElement;
   private inputEl: HTMLTextAreaElement;
   private phaseEl: HTMLElement;
@@ -16,18 +16,18 @@ export class DreamasterView extends ItemView {
   private sessionState: SessionState;
   private sessionFile: string | null = null;
 
-  constructor(leaf: WorkspaceLeaf, plugin: DreamasterPlugin) {
+  constructor(leaf: WorkspaceLeaf, plugin: LogographyPlugin) {
     super(leaf);
     this.plugin = plugin;
     this.sessionState = createInitialState(this.generateSessionId());
   }
 
   getViewType(): string {
-    return VIEW_TYPE_DREAMASTER;
+    return VIEW_TYPE_LOGOGRAPHY;
   }
 
   getDisplayText(): string {
-    return "Dreamaster";
+    return "Logography";
   }
 
   getIcon(): string {
@@ -37,28 +37,28 @@ export class DreamasterView extends ItemView {
   async onOpen(): Promise<void> {
     const container = this.contentEl;
     container.empty();
-    container.addClass("dreamaster-chat-container");
+    container.addClass("logography-chat-container");
 
     // Header with new session button
-    const header = container.createDiv("dreamaster-header");
-    header.createEl("span", { text: "Dreamaster", cls: "dreamaster-title" });
+    const header = container.createDiv("logography-header");
+    header.createEl("span", { text: "Logography", cls: "logography-title" });
     const newSessionBtn = header.createEl("button", {
       text: "New Session",
-      cls: "dreamaster-new-session-btn",
+      cls: "logography-new-session-btn",
     });
     newSessionBtn.addEventListener("click", () => this.startNewSession());
 
     // Phase indicator
-    this.phaseEl = container.createDiv("dreamaster-phase-indicator");
+    this.phaseEl = container.createDiv("logography-phase-indicator");
     this.updatePhaseIndicator();
 
     // Messages area
-    this.messagesEl = container.createDiv("dreamaster-messages");
+    this.messagesEl = container.createDiv("logography-messages");
 
     // Input area
-    const inputArea = container.createDiv("dreamaster-input-area");
+    const inputArea = container.createDiv("logography-input-area");
     this.inputEl = inputArea.createEl("textarea", {
-      cls: "dreamaster-input",
+      cls: "logography-input",
       attr: {
         placeholder: "Share a dream, a problem, or a question...",
         rows: "2",
@@ -67,7 +67,7 @@ export class DreamasterView extends ItemView {
 
     const sendBtn = inputArea.createEl("button", {
       text: "Send",
-      cls: "dreamaster-send-btn mod-cta",
+      cls: "logography-send-btn mod-cta",
     });
 
     // Event listeners
@@ -118,7 +118,7 @@ export class DreamasterView extends ItemView {
     try {
       // Show thinking indicator
       const thinkingEl = this.addMessage("assistant", "...");
-      thinkingEl.addClass("dreamaster-thinking");
+      thinkingEl.addClass("logography-thinking");
 
       // Build the prompt
       const systemPrompt = this.buildSystemPrompt();
@@ -145,7 +145,7 @@ export class DreamasterView extends ItemView {
 
     } catch (error) {
       // Remove thinking indicator
-      const thinking = this.messagesEl.querySelector(".dreamaster-thinking");
+      const thinking = this.messagesEl.querySelector(".logography-thinking");
       if (thinking) thinking.remove();
 
       const errorMsg = error instanceof Error ? error.message : "Unknown error";
@@ -232,7 +232,7 @@ export class DreamasterView extends ItemView {
   }
 
   private addMessage(role: "user" | "assistant", text: string): HTMLElement {
-    const msgEl = this.messagesEl.createDiv(`dreamaster-message ${role}`);
+    const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
     msgEl.textContent = text;
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
 

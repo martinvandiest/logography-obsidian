@@ -1,14 +1,14 @@
-// Dreamaster — Obsidian Plugin for AI Dream Analysis
+// Logography — Obsidian Plugin for AI Dream Analysis
 // Based on Pierre Grimes' Philosophical Midwifery
 import { Plugin, WorkspaceLeaf } from "obsidian";
-import { DreamasterSettings, DEFAULT_SETTINGS, DreamasterSettingTab } from "./settings";
-import { DreamasterView, VIEW_TYPE_DREAMASTER } from "./views/DreamasterView";
+import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from "./settings";
+import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from "./views/LogographyView";
 import { LLMClient } from "./llm/OpenRouterClient";
 import { VaultStorage } from "./storage/VaultStorage";
 import { AuthorMemory } from "./storage/AuthorMemory";
 
-export default class DreamasterPlugin extends Plugin {
-  settings: DreamasterSettings;
+export default class LogographyPlugin extends Plugin {
+  settings: LogographySettings;
   llm: LLMClient;
   vaultStorage: VaultStorage;
   authorMemory: AuthorMemory;
@@ -35,39 +35,39 @@ export default class DreamasterPlugin extends Plugin {
     }
 
     // Register the chat view
-    this.registerView(VIEW_TYPE_DREAMASTER, (leaf) => new DreamasterView(leaf, this));
+    this.registerView(VIEW_TYPE_LOGOGRAPHY, (leaf) => new LogographyView(leaf, this));
 
     // Ribbon icon — opens the chat pane
-    this.addRibbonIcon("brain", "Open Dreamaster", () => {
+    this.addRibbonIcon("brain", "Open Logography", () => {
       this.activateView();
     });
 
-    // Command palette: open Dreamaster
+    // Command palette: open Logography
     this.addCommand({
-      id: "open-dreamaster",
-      name: "Open Dreamaster",
+      id: "open-logography",
+      name: "Open Logography",
       callback: () => this.activateView(),
     });
 
     // Command palette: new session
     this.addCommand({
-      id: "new-dreamaster-session",
-      name: "Dreamaster: New Session",
+      id: "new-logography-session",
+      name: "Logography: New Session",
       callback: () => {
         // Close existing and reopen
-        this.app.workspace.getLeavesOfType(VIEW_TYPE_DREAMASTER).forEach(leaf => leaf.detach());
+        this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => leaf.detach());
         this.activateView();
       },
     });
 
     // Settings tab
-    this.addSettingTab(new DreamasterSettingTab(this.app, this));
+    this.addSettingTab(new LogographySettingTab(this.app, this));
 
-    console.log("Dreamaster loaded — Philosophical Midwifery for Obsidian");
+    console.log("Logography loaded — Philosophical Midwifery for Obsidian");
   }
 
   async onunload(): Promise<void> {
-    console.log("Dreamaster unloaded");
+    console.log("Logography unloaded");
   }
 
   async loadSettings(): Promise<void> {
@@ -90,11 +90,11 @@ export default class DreamasterPlugin extends Plugin {
   async activateView(): Promise<void> {
     const { workspace } = this.app;
 
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_DREAMASTER)[0];
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
     if (!leaf) {
       // Open in right sidebar
       leaf = workspace.getRightLeaf(false) || workspace.getLeaf();
-      await leaf.setViewState({ type: VIEW_TYPE_DREAMASTER, active: true });
+      await leaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
     }
 
     workspace.revealLeaf(leaf);

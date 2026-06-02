@@ -1,4 +1,4 @@
-export interface DreamasterSettings {
+export interface LogographySettings {
   // LLM Configuration
   apiEndpoint: string;
   apiKey: string;
@@ -14,7 +14,7 @@ export interface DreamasterSettings {
   maxTokens: number;
 }
 
-export const DEFAULT_SETTINGS: DreamasterSettings = {
+export const DEFAULT_SETTINGS: LogographySettings = {
   apiEndpoint: "https://openrouter.ai/api/v1/chat/completions",
   apiKey: "",
   model: "anthropic/claude-sonnet-4",
@@ -26,12 +26,12 @@ export const DEFAULT_SETTINGS: DreamasterSettings = {
 };
 
 import { App, PluginSettingTab, Setting } from "obsidian";
-import type DreamasterPlugin from "./main";
+import type LogographyPlugin from "./main";
 
-export class DreamasterSettingTab extends PluginSettingTab {
-  plugin: DreamasterPlugin;
+export class LogographySettingTab extends PluginSettingTab {
+  plugin: LogographyPlugin;
 
-  constructor(app: App, plugin: DreamasterPlugin) {
+  constructor(app: App, plugin: LogographyPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -40,7 +40,7 @@ export class DreamasterSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Dreamaster Settings" });
+    containerEl.createEl("h2", { text: "Logography Settings" });
 
     // API Configuration
     containerEl.createEl("h3", { text: "API Configuration" });

@@ -39,7 +39,7 @@ export class LLMClient {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${this.apiKey}`,
         "HTTP-Referer": "https://obsidian.md",
-        "X-Title": "Dreamaster",
+        "X-Title": "Logography",
       },
       body: JSON.stringify({
         model: this.model,
