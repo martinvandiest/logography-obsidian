@@ -1,28 +1,36 @@
 // Logography — Obsidian Plugin for AI Dream Analysis
 // Based on Pierre Grimes' Philosophical Midwifery
+// Architecture: Plugin is UI client. Server is the brain.
 import { Plugin, WorkspaceLeaf } from "obsidian";
 import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from "./settings";
 import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from "./views/LogographyView";
-import { LLMClient } from "./llm/OpenRouterClient";
+import { LogographyServer } from "./server/LogographyServer";
 import { VaultStorage } from "./storage/VaultStorage";
 import { AuthorMemory } from "./storage/AuthorMemory";
 
 export default class LogographyPlugin extends Plugin {
   settings: LogographySettings;
-  llm: LLMClient;
+  server: LogographyServer;
   vaultStorage: VaultStorage;
   authorMemory: AuthorMemory;
 
   async onload(): Promise<void> {
     await this.loadSettings();
 
-    // Initialize components
-    this.llm = new LLMClient(
-      this.settings.apiEndpoint,
+    // Generate a stable user ID if not set
+    if (!this.settings.userId) {
+      this.settings.userId = `obsidian_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      await this.saveSettings();
+    }
+
+    // Initialize server client
+    this.server = new LogographyServer(
+      this.settings.serverUrl,
       this.settings.apiKey,
-      this.settings.model,
-      this.settings.maxTokens
+      this.settings.userId
     );
+
+    // Initialize vault storage and author memory
     this.vaultStorage = new VaultStorage(this.app);
     this.authorMemory = new AuthorMemory(this.vaultStorage);
 
@@ -54,7 +62,6 @@ export default class LogographyPlugin extends Plugin {
       id: "new-logography-session",
       name: "Logography: New Session",
       callback: () => {
-        // Close existing and reopen
         this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => leaf.detach());
         this.activateView();
       },
@@ -76,14 +83,9 @@ export default class LogographyPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
-    // Update LLM client with new settings
-    if (this.llm) {
-      this.llm.updateConfig(
-        this.settings.apiEndpoint,
-        this.settings.apiKey,
-        this.settings.model,
-        this.settings.maxTokens
-      );
+    // Update server client with new settings
+    if (this.server) {
+      this.server.updateConfig(this.settings.serverUrl, this.settings.apiKey);
     }
   }
 

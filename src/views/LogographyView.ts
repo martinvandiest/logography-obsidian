@@ -1,9 +1,8 @@
 // Logography Chat View — sidebar pane for dream analysis
-import { ItemView, WorkspaceLeaf, MarkdownView } from "obsidian";
+// Thin UI client. All intelligence lives on the server.
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import type LogographyPlugin from "../main";
-import { LLMMessage } from "../llm/OpenRouterClient";
-import { createInitialState, evaluateTransition, serializeSessionContext, Phase, SessionState } from "../state/PhaseMachine";
-import { buildMasterSystemPrompt, buildPhasePrompt, DREAM_EXTRACTOR_PROMPT, CRISIS_KEYWORDS, CRISIS_RESPONSE } from "../prompts/master";
+import type { ServerResponse } from "../server/LogographyServer";
 
 export const VIEW_TYPE_LOGOGRAPHY = "logography-chat-view";
 
@@ -12,14 +11,11 @@ export class LogographyView extends ItemView {
   private messagesEl: HTMLElement;
   private inputEl: HTMLTextAreaElement;
   private phaseEl: HTMLElement;
-  private messages: LLMMessage[] = [];
-  private sessionState: SessionState;
-  private sessionFile: string | null = null;
+  private sessionId: string | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: LogographyPlugin) {
     super(leaf);
     this.plugin = plugin;
-    this.sessionState = createInitialState(this.generateSessionId());
   }
 
   getViewType(): string {
@@ -50,7 +46,7 @@ export class LogographyView extends ItemView {
 
     // Phase indicator
     this.phaseEl = container.createDiv("logography-phase-indicator");
-    this.updatePhaseIndicator();
+    this.updatePhaseIndicator("I", "opening");
 
     // Messages area
     this.messagesEl = container.createDiv("logography-messages");
@@ -90,9 +86,16 @@ export class LogographyView extends ItemView {
   }
 
   async onClose(): Promise<void> {
-    // Save session state on close
-    if (this.plugin.settings.enableAuthorMemory && this.sessionState.rawNarration) {
-      await this.saveSessionState();
+    // Save session on close if there's content
+    if (this.sessionId && this.plugin.settings.enableAuthorMemory) {
+      try {
+        const summary = await this.plugin.server.reviewSession();
+        if (summary.summary) {
+          this.plugin.authorMemory.queueUpdate(summary.summary);
+        }
+      } catch {
+        // Silent fail — non-critical
+      }
     }
   }
 
@@ -100,47 +103,37 @@ export class LogographyView extends ItemView {
     const text = this.inputEl.value.trim();
     if (!text) return;
 
-    // Check for crisis keywords
+    // Local crisis detection
     if (this.detectCrisis(text)) {
-      this.addMessage("assistant", CRISIS_RESPONSE);
+      this.addMessage("assistant", "I want to pause here. If you're in crisis, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Crisis Text Line (text HOME to 741741). You don't have to face this alone.");
       this.inputEl.value = "";
       return;
     }
 
-    // Add user message
+    // Add user message to UI
     this.addMessage("user", text);
     this.inputEl.value = "";
     this.inputEl.style.height = "auto";
-
-    // Update session state with user input
-    this.updateStateFromUserInput(text);
 
     try {
       // Show thinking indicator
       const thinkingEl = this.addMessage("assistant", "...");
       thinkingEl.addClass("logography-thinking");
 
-      // Build the prompt
-      const systemPrompt = this.buildSystemPrompt();
-      const messages: LLMMessage[] = [
-        { role: "system", content: systemPrompt },
-        ...this.messages.slice(-20), // Rolling window of 20 messages
-      ];
+      // Send to server — server handles prompts, state machine, LLM
+      const response = await this.plugin.server.sendMessage(text);
 
-      // Call LLM
-      const response = await this.plugin.llm.sendMessage(messages);
-
-      // Remove thinking indicator and add real response
+      // Remove thinking indicator and show response
       thinkingEl.remove();
       this.addMessage("assistant", response.text);
 
-      // Update session state based on response
-      this.sessionState = evaluateTransition(this.sessionState, response.text);
-      this.updatePhaseIndicator();
+      // Update phase indicator from server response
+      this.updatePhaseIndicator(response.phase, response.step);
+      this.sessionId = response.session_id;
 
-      // Update author memory
+      // Save session to vault (local backup)
       if (this.plugin.settings.enableAuthorMemory) {
-        await this.updateAuthorMemory(response.text);
+        await this.saveToVault(text, response);
       }
 
     } catch (error) {
@@ -148,152 +141,69 @@ export class LogographyView extends ItemView {
       const thinking = this.messagesEl.querySelector(".logography-thinking");
       if (thinking) thinking.remove();
 
-      const errorMsg = error instanceof Error ? error.message : "Unknown error";
-      this.addMessage("assistant", `I'm having trouble connecting. ${errorMsg}`);
+      const errorMsg = error instanceof Error ? error.message : "Connection error";
+      this.addMessage("assistant", errorMsg);
     }
-  }
-
-  private updateStateFromUserInput(text: string): void {
-    const state = this.sessionState;
-
-    // Phase I: capture narration
-    if (state.currentPhase === "I" && !state.rawNarration) {
-      state.rawNarration = text;
-      state.entryType = "dream"; // Default, could be refined
-      
-      // Trigger dream extraction if it looks like a dream
-      if (text.length > 50 && (
-        text.toLowerCase().includes("dream") ||
-        text.toLowerCase().includes("i was") ||
-        text.toLowerCase().includes("nightmare")
-      )) {
-        state.entryType = "dream";
-      }
-    }
-
-    // Phase II: capture negative state
-    if (state.currentPhase === "II" && state.currentStep === "negative_state") {
-      if (text.split(" ").length <= 5) {
-        state.negativeState = text;
-      }
-    }
-
-    // Phase III: capture belief
-    if (state.currentPhase === "III" && state.currentStep === "belief_articulation") {
-      const existingBelief = state.beliefs.find(b => b.status === "under_examination");
-      if (!existingBelief) {
-        state.beliefs.push({
-          id: state.beliefs.length + 1,
-          statement: text,
-          status: "under_examination",
-          originScene: null,
-          originTraced: false,
-          contradictionsTested: false,
-          deflationLevel: "none",
-        });
-      }
-    }
-
-    // Track goals
-    if (state.currentPhase === "I" && state.currentStep === "goals") {
-      state.goals.push(text);
-    }
-  }
-
-  private buildSystemPrompt(): string {
-    const parts: string[] = [];
-
-    // Master system prompt
-    parts.push(buildMasterSystemPrompt(this.plugin.settings.userName));
-
-    // Phase-specific prompt
-    parts.push(buildPhasePrompt(
-      this.sessionState.currentPhase,
-      this.sessionState.currentStep,
-      {
-        identifiedBelief: this.sessionState.beliefs.find(b => b.status === "under_examination")?.statement,
-        negativeState: this.sessionState.negativeState,
-      }
-    ));
-
-    // Session context
-    parts.push(serializeSessionContext(this.sessionState));
-
-    // Author memory
-    if (this.plugin.settings.enableAuthorMemory) {
-      const memoryContext = this.plugin.authorMemory.getContextForPrompt(
-        this.plugin.settings.enableAuthorMemory,
-        this.plugin.settings.shareMemoryWithAI
-      );
-      parts.push(memoryContext);
-    }
-
-    return parts.join("\n\n---\n\n");
   }
 
   private addMessage(role: "user" | "assistant", text: string): HTMLElement {
     const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
     msgEl.textContent = text;
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
-
-    // Track in message history
-    this.messages.push({ role, content: text });
-
     return msgEl;
   }
 
-  private updatePhaseIndicator(): void {
-    const phaseNames: Record<Phase, string> = {
+  private updatePhaseIndicator(phase: string, step: string): void {
+    const phaseNames: Record<string, string> = {
       I: "Terrain",
       II: "Scenes",
       III: "Analysis",
       IV: "Cross-Examination",
       V: "Integration",
+      terrain: "Terrain",
+      scenes: "Scenes",
+      diagram: "Analysis",
+      cross_exam: "Cross-Examination",
+      integration: "Integration",
     };
-    const phase = this.sessionState.currentPhase;
-    const step = this.sessionState.currentStep.replace(/_/g, " ");
-    this.phaseEl.textContent = `Phase ${phase}: ${phaseNames[phase]} — ${step}`;
+    const phaseName = phaseNames[phase] || phase;
+    const stepName = step.replace(/_/g, " ");
+    this.phaseEl.textContent = `Phase ${phase}: ${phaseName} — ${stepName}`;
   }
 
-  private async updateAuthorMemory(aiResponse: string): Promise<void> {
+  private async saveToVault(userMessage: string, response: ServerResponse): Promise<void> {
     try {
-      const instruction = this.plugin.authorMemory.getUpdateInstruction();
-      const summary = await this.plugin.llm.ask(instruction, `Session context:\n${serializeSessionContext(this.sessionState)}\n\nLatest exchange:\nUser: ${this.messages[this.messages.length - 2]?.content || ""}\nAI: ${aiResponse}`);
-      this.plugin.authorMemory.queueUpdate(summary);
-    } catch {
-      // Silent fail — memory update is non-critical
-    }
-  }
+      // Append to a running session file in the vault
+      const sessionFile = `Logography/Sessions/${new Date().toISOString().slice(0, 10)}-session.md`;
+      const existing = this.plugin.vaultStorage.getVault().getAbstractFileByPath(sessionFile);
 
-  private async saveSessionState(): Promise<void> {
-    try {
-      this.sessionFile = await this.plugin.vaultStorage.saveSession(this.sessionState);
+      const entry = `\n\n**You:** ${userMessage}\n\n**Guide:** ${response.text}\n`;
+
+      if (existing) {
+        await this.plugin.vaultStorage.getVault().process(existing as any, (data) => data + entry);
+      } else {
+        const header = `# Logography Session — ${new Date().toLocaleDateString()}\n\n*Phase: ${response.phase} | Step: ${response.step}*\n`;
+        await this.plugin.vaultStorage.getVault().create(sessionFile, header + entry);
+      }
     } catch {
-      // Silent fail
+      // Silent fail — vault storage is non-critical
     }
   }
 
   private startNewSession(): void {
-    // Save current session first
-    if (this.sessionState.rawNarration) {
-      this.saveSessionState();
-    }
-
-    // Reset
-    this.sessionState = createInitialState(this.generateSessionId());
-    this.messages = [];
-    this.sessionFile = null;
+    this.sessionId = null;
     this.messagesEl.empty();
-    this.updatePhaseIndicator();
+    this.updatePhaseIndicator("I", "opening");
     this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
   }
 
   private detectCrisis(text: string): boolean {
+    const crisisKeywords = [
+      "kill myself", "suicide", "want to die", "end my life",
+      "self harm", "hurting myself", "no reason to live",
+      "better off dead", "can't go on", "give up on life",
+    ];
     const lower = text.toLowerCase();
-    return CRISIS_KEYWORDS.some(keyword => lower.includes(keyword));
-  }
-
-  private generateSessionId(): string {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    return crisisKeywords.some(keyword => lower.includes(keyword));
   }
 }

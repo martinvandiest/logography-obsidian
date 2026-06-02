@@ -1,28 +1,24 @@
 export interface LogographySettings {
-  // LLM Configuration
-  apiEndpoint: string;
+  // Server Configuration
+  serverUrl: string;
   apiKey: string;
-  model: string;
-  
+  userId: string;
+
   // Privacy
   enableAuthorMemory: boolean;
   shareMemoryWithAI: boolean;
-  redactSensitiveData: boolean;
-  
-  // Session
+
+  // Display
   userName: string;
-  maxTokens: number;
 }
 
 export const DEFAULT_SETTINGS: LogographySettings = {
-  apiEndpoint: "https://openrouter.ai/api/v1/chat/completions",
+  serverUrl: "https://logographyapp.com",
   apiKey: "",
-  model: "anthropic/claude-sonnet-4",
+  userId: "",
   enableAuthorMemory: true,
   shareMemoryWithAI: true,
-  redactSensitiveData: true,
   userName: "",
-  maxTokens: 1024,
 };
 
 import { App, PluginSettingTab, Setting } from "obsidian";
@@ -42,29 +38,29 @@ export class LogographySettingTab extends PluginSettingTab {
 
     containerEl.createEl("h2", { text: "Logography Settings" });
 
-    // API Configuration
-    containerEl.createEl("h3", { text: "API Configuration" });
+    // Server Configuration
+    containerEl.createEl("h3", { text: "Server" });
 
     new Setting(containerEl)
-      .setName("API Endpoint")
-      .setDesc("OpenRouter or compatible API endpoint")
+      .setName("Server URL")
+      .setDesc("Your Logography server address")
       .addText((text) =>
         text
-          .setPlaceholder("https://openrouter.ai/api/v1/chat/completions")
-          .setValue(this.plugin.settings.apiEndpoint)
+          .setPlaceholder("https://logographyapp.com")
+          .setValue(this.plugin.settings.serverUrl)
           .onChange(async (value) => {
-            this.plugin.settings.apiEndpoint = value;
+            this.plugin.settings.serverUrl = value;
             await this.plugin.saveSettings();
           })
       );
 
     new Setting(containerEl)
       .setName("API Key")
-      .setDesc("Your API key (stored securely in Obsidian secrets)")
+      .setDesc("Your Logography API key (stored in plugin settings)")
       .addText((text) => {
         text.inputEl.type = "password";
         text
-          .setPlaceholder("sk-...")
+          .setPlaceholder("logography-...")
           .setValue(this.plugin.settings.apiKey)
           .onChange(async (value) => {
             this.plugin.settings.apiKey = value;
@@ -73,14 +69,14 @@ export class LogographySettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Model")
-      .setDesc("LLM model identifier")
+      .setName("User ID")
+      .setDesc("Your Logography account ID (auto-assigned on signup)")
       .addText((text) =>
         text
-          .setPlaceholder("anthropic/claude-sonnet-4")
-          .setValue(this.plugin.settings.model)
+          .setPlaceholder("obsidian_user_abc123")
+          .setValue(this.plugin.settings.userId)
           .onChange(async (value) => {
-            this.plugin.settings.model = value;
+            this.plugin.settings.userId = value;
             await this.plugin.saveSettings();
           })
       );
@@ -124,14 +120,14 @@ export class LogographySettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl)
-      .setName("Redact Sensitive Data")
-      .setDesc("Strip emails, phones, URLs, and addresses before sending to AI")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.redactSensitiveData).onChange(async (value) => {
-          this.plugin.settings.redactSensitiveData = value;
-          await this.plugin.saveSettings();
-        })
-      );
+    // Status
+    containerEl.createEl("h3", { text: "Status" });
+    const statusEl = containerEl.createDiv();
+    statusEl.createEl("p", {
+      text: `Server: ${this.plugin.settings.serverUrl || "Not configured"}`,
+    });
+    statusEl.createEl("p", {
+      text: `User ID: ${this.plugin.settings.userId || "Not configured"}`,
+    });
   }
 }
