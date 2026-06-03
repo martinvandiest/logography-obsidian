@@ -81,6 +81,9 @@ export class LogographyView extends ItemView {
       this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + "px";
     });
 
+    // Sleepy UI: auto-focus input so dreamer can start typing immediately
+    setTimeout(() => this.inputEl.focus(), 50);
+
     // Initial greeting
     this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
   }
@@ -195,6 +198,13 @@ export class LogographyView extends ItemView {
     this.messagesEl.empty();
     this.updatePhaseIndicator("I", "opening");
     this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
+  }
+
+  // Sleepy UI: expose focus for Quick Capture command
+  focusInput(): void {
+    if (this.inputEl) {
+      this.inputEl.focus();
+    }
   }
 
   private detectCrisis(text: string): boolean {

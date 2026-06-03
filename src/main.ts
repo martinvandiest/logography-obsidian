@@ -67,6 +67,13 @@ export default class LogographyPlugin extends Plugin {
       },
     });
 
+    // Sleepy UI: Quick Capture — opens pane and focuses input immediately
+    this.addCommand({
+      id: "quick-capture",
+      name: "Logography: Quick Capture",
+      callback: () => this.quickCapture(),
+    });
+
     // Settings tab
     this.addSettingTab(new LogographySettingTab(this.app, this));
 
@@ -100,5 +107,15 @@ export default class LogographyPlugin extends Plugin {
     }
 
     workspace.revealLeaf(leaf);
+  }
+
+  // Sleepy UI: open pane and focus input in one action
+  async quickCapture(): Promise<void> {
+    await this.activateView();
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY);
+    if (leaves.length > 0) {
+      const view = leaves[0].view as LogographyView;
+      view.focusInput();
+    }
   }
 }
