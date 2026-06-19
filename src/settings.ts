@@ -1,13 +1,16 @@
-// Logography Settings — faith tradition, model selection, server config
+// Logography Settings — login flow, faith tradition, model selection
 
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type LogographyPlugin from './main';
+import type { AuthResponse } from './server/LogographyServer';
 
 export interface LogographySettings {
-  // Server
+  // Auth (populated by login flow)
   serverUrl: string;
-  apiKey: string;
+  apiKey: string;       // JWT token — set by login, not manually
   userId: string;
+  userEmail: string;
+  userDisplayName: string;
 
   // Session
   userName: string;
@@ -50,6 +53,8 @@ export const DEFAULT_SETTINGS: LogographySettings = {
   serverUrl: 'https://logographyapp.com',
   apiKey: '',
   userId: '',
+  userEmail: '',
+  userDisplayName: '',
   userName: '',
   faithTradition: '',
   recoveryMode: false,
@@ -58,6 +63,12 @@ export const DEFAULT_SETTINGS: LogographySettings = {
 
 export class LogographySettingTab extends PluginSettingTab {
   plugin: LogographyPlugin;
+  private loginEmail = '';
+  private loginPassword = '';
+  private mfaUserId = '';
+  private mfaCode = '';
+  private showMfa = false;
+  private statusEl: HTMLElement | null = null;
 
   constructor(app: App, plugin: LogographyPlugin) {
     super(app, plugin);
@@ -73,101 +84,258 @@ export class LogographySettingTab extends PluginSettingTab {
     // --- Account ---
     containerEl.createEl('h3', { text: 'Account' });
 
-    new Setting(containerEl)
-      .setName('Server URL')
-      .setDesc('Your Logography server address')
-      .addText((text) =>
-        text
-          .setPlaceholder('https://logographyapp.com')
-          .setValue(this.plugin.settings.serverUrl)
-          .onChange(async (value) => {
-            this.plugin.settings.serverUrl = value;
-            await this.plugin.saveSettings();
-          })
-      );
+    const isLoggedIn = !!this.plugin.settings.apiKey;
 
-    new Setting(containerEl)
-      .setName('API key')
-      .setDesc('Your Logography API key (stored securely)')
-      .addText((text) => {
-        text.inputEl.type = 'password';
-        text
-          .setPlaceholder('logography-...')
-          .setValue(this.plugin.settings.apiKey)
-          .onChange(async (value) => {
-            this.plugin.settings.apiKey = value;
+    if (isLoggedIn) {
+      this.renderLoggedIn(containerEl);
+    } else if (this.showMfa) {
+      this.renderMfa(containerEl);
+    } else {
+      this.renderLogin(containerEl);
+    }
+
+    // --- Session (only when logged in) ---
+    if (isLoggedIn) {
+      containerEl.createEl('h3', { text: 'Session' });
+
+      new Setting(containerEl)
+        .setName('Your name')
+        .setDesc('How the guide addresses you (optional)')
+        .addText((text) =>
+          text
+            .setPlaceholder('Enter your name')
+            .setValue(this.plugin.settings.userName)
+            .onChange(async (value) => {
+              this.plugin.settings.userName = value;
+              await this.plugin.saveSettings();
+            })
+        );
+
+      new Setting(containerEl)
+        .setName('Faith tradition')
+        .setDesc('Informs the AI\'s language and framing (optional)')
+        .addDropdown((dropdown) => {
+          for (const tradition of FAITH_TRADITIONS) {
+            dropdown.addOption(tradition.value, tradition.label);
+          }
+          dropdown.setValue(this.plugin.settings.faithTradition);
+          dropdown.onChange(async (value) => {
+            this.plugin.settings.faithTradition = value;
             await this.plugin.saveSettings();
           });
-      });
+        });
 
-    // --- Session ---
-    containerEl.createEl('h3', { text: 'Session' });
-
-    new Setting(containerEl)
-      .setName('Your name')
-      .setDesc('How the guide addresses you (optional)')
-      .addText((text) =>
-        text
-          .setPlaceholder('Enter your name')
-          .setValue(this.plugin.settings.userName)
-          .onChange(async (value) => {
-            this.plugin.settings.userName = value;
+      new Setting(containerEl)
+        .setName('Recovery support')
+        .setDesc('12-step recovery framework (stacks with faith tradition)')
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.recoveryMode).onChange(async (value) => {
+            this.plugin.settings.recoveryMode = value;
             await this.plugin.saveSettings();
           })
-      );
+        );
 
-    new Setting(containerEl)
-      .setName('Faith tradition')
-      .setDesc('Informs the AI\'s language and framing (optional)')
-      .addDropdown((dropdown) => {
-        for (const tradition of FAITH_TRADITIONS) {
-          dropdown.addOption(tradition.value, tradition.label);
-        }
-        dropdown.setValue(this.plugin.settings.faithTradition);
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.faithTradition = value;
-          await this.plugin.saveSettings();
+      // --- Model ---
+      containerEl.createEl('h3', { text: 'AI Model' });
+
+      new Setting(containerEl)
+        .setName('Model')
+        .setDesc('Which AI model to use for analysis')
+        .addDropdown((dropdown) => {
+          for (const model of MODELS) {
+            dropdown.addOption(model.value, model.label);
+          }
+          dropdown.setValue(this.plugin.settings.model);
+          dropdown.onChange(async (value) => {
+            this.plugin.settings.model = value;
+            await this.plugin.saveSettings();
+          });
         });
-      });
-
-    new Setting(containerEl)
-      .setName('Recovery support')
-      .setDesc('12-step recovery framework (stacks with faith tradition)')
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.recoveryMode).onChange(async (value) => {
-          this.plugin.settings.recoveryMode = value;
-          await this.plugin.saveSettings();
-        })
-      );
-
-    // --- Model ---
-    containerEl.createEl('h3', { text: 'AI Model' });
-
-    new Setting(containerEl)
-      .setName('Model')
-      .setDesc('Which AI model to use for analysis')
-      .addDropdown((dropdown) => {
-        for (const model of MODELS) {
-          dropdown.addOption(model.value, model.label);
-        }
-        dropdown.setValue(this.plugin.settings.model);
-        dropdown.onChange(async (value) => {
-          this.plugin.settings.model = value;
-          await this.plugin.saveSettings();
-        });
-      });
+    }
 
     // --- Status ---
     containerEl.createEl('h3', { text: 'Status' });
-    const statusEl = containerEl.createDiv();
-    statusEl.createEl('p', {
-      text: `Server: ${this.plugin.settings.serverUrl || 'Not configured'}`,
+    this.statusEl = containerEl.createDiv();
+    this.renderStatus();
+  }
+
+  private renderLogin(containerEl: HTMLElement): void {
+    const loginDiv = containerEl.createDiv('logography-login-form');
+    loginDiv.createEl('p', {
+      text: 'Sign in to your Logography account.',
+      cls: 'logography-login-desc',
     });
-    statusEl.createEl('p', {
-      text: `User ID: ${this.plugin.settings.userId || 'Not configured'}`,
+
+    new Setting(loginDiv)
+      .setName('Email')
+      .addText((text) => {
+        text.inputEl.type = 'email';
+        text
+          .setPlaceholder('you@example.com')
+          .onChange((value) => { this.loginEmail = value; });
+      });
+
+    new Setting(loginDiv)
+      .setName('Password')
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text
+          .setPlaceholder('Password')
+          .onChange((value) => { this.loginPassword = value; });
+      });
+
+    const btnRow = loginDiv.createDiv('logography-login-buttons');
+    const loginBtn = btnRow.createEl('button', {
+      text: 'Sign in',
+      cls: 'mod-cta',
     });
-    statusEl.createEl('p', {
-      text: `Data: Stored in your Obsidian vault (Logography/ folder)`,
+    loginBtn.addEventListener('click', () => this.handleLogin());
+
+    const signupLink = btnRow.createEl('a', {
+      text: 'Create account',
+      href: 'https://logographyapp.com',
     });
+    signupLink.style.marginLeft = '16px';
+    signupLink.style.fontSize = '13px';
+  }
+
+  private renderMfa(containerEl: HTMLElement): void {
+    const mfaDiv = containerEl.createDiv('logography-mfa-form');
+    mfaDiv.createEl('p', {
+      text: 'Enter the code from your authenticator app.',
+    });
+
+    new Setting(mfaDiv)
+      .setName('Verification code')
+      .addText((text) => {
+        text
+          .setPlaceholder('000000')
+          .onChange((value) => { this.mfaCode = value; });
+      });
+
+    const btnRow = mfaDiv.createDiv('logography-login-buttons');
+    const verifyBtn = btnRow.createEl('button', {
+      text: 'Verify',
+      cls: 'mod-cta',
+    });
+    verifyBtn.addEventListener('click', () => this.handleMfaVerify());
+
+    const backBtn = btnRow.createEl('button', { text: 'Back' });
+    backBtn.style.marginLeft = '8px';
+    backBtn.addEventListener('click', () => {
+      this.showMfa = false;
+      this.mfaUserId = '';
+      this.display();
+    });
+  }
+
+  private renderLoggedIn(containerEl: HTMLElement): void {
+    const infoDiv = containerEl.createDiv('logography-account-info');
+    infoDiv.createEl('p', {
+      text: `Signed in as ${this.plugin.settings.userEmail}`,
+    });
+    if (this.plugin.settings.userDisplayName) {
+      infoDiv.createEl('p', {
+        text: this.plugin.settings.userDisplayName,
+        cls: 'logography-display-name',
+      });
+    }
+
+    const logoutBtn = infoDiv.createEl('button', { text: 'Sign out' });
+    logoutBtn.addEventListener('click', async () => {
+      this.plugin.settings.apiKey = '';
+      this.plugin.settings.userId = '';
+      this.plugin.settings.userEmail = '';
+      this.plugin.settings.userDisplayName = '';
+      this.plugin.server.updateConfig(this.plugin.settings.serverUrl, '');
+      await this.plugin.saveSettings();
+      new Notice('Signed out');
+      this.display();
+    });
+  }
+
+  private renderStatus(): void {
+    if (!this.statusEl) return;
+    this.statusEl.empty();
+
+    const items: string[] = [];
+    items.push(`Server: ${this.plugin.settings.serverUrl || 'Not configured'}`);
+
+    if (this.plugin.settings.apiKey) {
+      items.push(`Account: ${this.plugin.settings.userEmail}`);
+      items.push(`Data: Stored in your Obsidian vault (Logography/ folder)`);
+    } else {
+      items.push('Account: Not signed in');
+    }
+
+    for (const item of items) {
+      this.statusEl.createEl('p', { text: item });
+    }
+  }
+
+  private async handleLogin(): Promise<void> {
+    if (!this.loginEmail || !this.loginPassword) {
+      new Notice('Email and password required');
+      return;
+    }
+
+    try {
+      const response = await this.plugin.server.login(this.loginEmail, this.loginPassword);
+
+      // Check if MFA is required
+      if (response.mfa_required) {
+        this.mfaUserId = response.user_id;
+        this.showMfa = true;
+        this.display();
+        return;
+      }
+
+      // Store auth
+      await this.onLoginSuccess(response);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Login failed';
+      new Notice(`Login failed: ${msg}`);
+    }
+  }
+
+  private async handleMfaVerify(): Promise<void> {
+    if (!this.mfaCode) {
+      new Notice('Enter your verification code');
+      return;
+    }
+
+    try {
+      const response = await this.plugin.server.verifyMfa(
+        this.loginEmail,
+        this.mfaCode,
+        this.mfaUserId
+      );
+      await this.onLoginSuccess(response);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'MFA verification failed';
+      new Notice(`MFA failed: ${msg}`);
+    }
+  }
+
+  private async onLoginSuccess(response: AuthResponse): Promise<void> {
+    if (!response.token) {
+      new Notice('Login succeeded but no token received');
+      return;
+    }
+    this.plugin.settings.apiKey = response.token;
+    this.plugin.settings.userId = response.user_id;
+    this.plugin.settings.userEmail = response.email;
+    this.plugin.settings.userDisplayName = response.display_name || '';
+    this.plugin.server.updateConfig(this.plugin.settings.serverUrl, response.token);
+    this.plugin.server.updateUserId(response.user_id);
+    await this.plugin.saveSettings();
+
+    this.showMfa = false;
+    this.mfaUserId = '';
+    this.loginEmail = '';
+    this.loginPassword = '';
+
+    new Notice(`Signed in as ${response.email}`);
+    this.display();
   }
 }

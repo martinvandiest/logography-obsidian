@@ -20,10 +20,16 @@ export interface VaultChatResponse {
 }
 
 export interface AuthResponse {
-  token: string;
+  token?: string;
   user_id: string;
   email: string;
+  display_name?: string;
+  tier?: string;
+  status?: string;
+  beta_tester?: boolean;
   mfa_required?: boolean;
+  mfa_verified?: boolean;
+  message?: string;
 }
 
 export interface MetricsPayload {
@@ -98,18 +104,17 @@ export class LogographyServer {
   // --- Auth ---
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    return this.request('POST', '/api/auth/login', { email, password });
+    return this.request('POST', '/api/login', { email, password });
   }
 
-  async signup(email: string, password: string): Promise<AuthResponse> {
-    return this.request('POST', '/api/auth/signup', { email, password });
+  async signup(email: string, password: string, inviteCode: string): Promise<AuthResponse> {
+    return this.request('POST', '/api/signup', { email, password, invite_code: inviteCode });
   }
 
-  async verifyMfa(email: string, code: string, tempToken: string): Promise<AuthResponse> {
-    return this.request('POST', '/api/auth/mfa/verify', {
-      email,
+  async verifyMfa(email: string, code: string, userId: string): Promise<AuthResponse> {
+    return this.request('POST', '/api/mfa/login', {
+      user_id: userId,
       code,
-      temp_token: tempToken,
     });
   }
 
