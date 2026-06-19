@@ -198,7 +198,13 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
         cls: "logography-display-name"
       });
     }
+    const importSetting = new import_obsidian.Setting(infoDiv).setName("Import sessions from server").setDesc("One-time migration: pull your existing sessions into this vault.");
+    importSetting.addButton((btn) => {
+      btn.setButtonText("Import");
+      btn.onClick(() => this.handleImport());
+    });
     const logoutBtn = infoDiv.createEl("button", { text: "Sign out" });
+    logoutBtn.style.marginTop = "12px";
     logoutBtn.addEventListener("click", async () => {
       this.plugin.settings.apiKey = "";
       this.plugin.settings.userId = "";
@@ -209,6 +215,72 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       new import_obsidian.Notice("Signed out");
       this.display();
     });
+  }
+  async handleImport() {
+    new import_obsidian.Notice("Importing sessions from server...");
+    try {
+      const sessions = await this.plugin.server.listServerSessions();
+      new import_obsidian.Notice(`Found ${sessions.length} sessions on server.`);
+      let imported = 0;
+      let skipped = 0;
+      for (const summary of sessions) {
+        try {
+          const detail = await this.plugin.server.getServerSessionMessages(summary.session_id);
+          if (!detail.conversation || detail.conversation.length === 0) {
+            skipped++;
+            continue;
+          }
+          const date = summary.created_at ? summary.created_at.slice(0, 10) : (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+          const sessionId = summary.session_id;
+          const filepath = `Logography/Sessions/${date}-${sessionId}.md`;
+          const frontmatter = [
+            "---",
+            `session_id: "${sessionId}"`,
+            `started_at: "${summary.created_at || date}"`,
+            `current_phase: "${summary.phase || "terrain"}"`,
+            `current_step: "${summary.phase || "terrain"}"`,
+            `turn_count: ${summary.message_count || 0}`,
+            `completed: ${summary.completed}`,
+            `entry_type: "migrated"`,
+            `scenes: []`,
+            `beliefs: []`,
+            `summary: "Migrated from server. ${summary.message_count} messages."`,
+            "---"
+          ].join("\n");
+          const conversation = detail.conversation.map((m) => {
+            const label = m.role === "user" ? "You" : "Logography";
+            return `**${label}:** ${m.content}`;
+          }).join("\n\n");
+          const content = `${frontmatter}
+
+# Logography Session \u2014 ${date}
+
+${conversation}
+
+---
+*Migrated from server*
+`;
+          const existing = this.plugin.vaultStorage.getVault().getAbstractFileByPath(filepath);
+          if (existing) {
+            skipped++;
+            continue;
+          }
+          const folder = "Logography/Sessions";
+          if (!this.plugin.vaultStorage.getVault().getAbstractFileByPath(folder)) {
+            await this.plugin.vaultStorage.getVault().createFolder(folder);
+          }
+          await this.plugin.vaultStorage.getVault().create(filepath, content);
+          imported++;
+        } catch (err) {
+          console.error(`Failed to import session ${summary.session_id}:`, err);
+          skipped++;
+        }
+      }
+      new import_obsidian.Notice(`Import complete: ${imported} imported, ${skipped} skipped.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      new import_obsidian.Notice(`Import failed: ${msg}`);
+    }
   }
   renderStatus() {
     if (!this.statusEl)
@@ -1207,6 +1279,13 @@ var LogographyServer = class {
   // --- Health ---
   async health() {
     return this.request("GET", "/api/health");
+  }
+  // --- Session Migration (one-time import from server to vault) ---
+  async listServerSessions() {
+    return this.request("GET", `/api/sessions/${this.userId}`);
+  }
+  async getServerSessionMessages(sessionId) {
+    return this.request("GET", `/api/sessions/${this.userId}/${sessionId}/messages`);
   }
   // --- Internal ---
   async request(method, path, body) {

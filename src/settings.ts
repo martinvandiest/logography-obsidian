@@ -241,7 +241,17 @@ export class LogographySettingTab extends PluginSettingTab {
       });
     }
 
+    // Import from server button
+    const importSetting = new Setting(infoDiv)
+      .setName('Import sessions from server')
+      .setDesc('One-time migration: pull your existing sessions into this vault.');
+    importSetting.addButton((btn) => {
+      btn.setButtonText('Import');
+      btn.onClick(() => this.handleImport());
+    });
+
     const logoutBtn = infoDiv.createEl('button', { text: 'Sign out' });
+    logoutBtn.style.marginTop = '12px';
     logoutBtn.addEventListener('click', async () => {
       this.plugin.settings.apiKey = '';
       this.plugin.settings.userId = '';
@@ -252,6 +262,83 @@ export class LogographySettingTab extends PluginSettingTab {
       new Notice('Signed out');
       this.display();
     });
+  }
+
+  private async handleImport(): Promise<void> {
+    new Notice('Importing sessions from server...');
+    try {
+      // 1. List all sessions on server
+      const sessions = await this.plugin.server.listServerSessions();
+      new Notice(`Found ${sessions.length} sessions on server.`);
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (const summary of sessions) {
+        try {
+          // 2. Get full conversation for each session
+          const detail = await this.plugin.server.getServerSessionMessages(summary.session_id);
+
+          if (!detail.conversation || detail.conversation.length === 0) {
+            skipped++;
+            continue;
+          }
+
+          // 3. Convert to vault markdown
+          const date = summary.created_at ? summary.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10);
+          const sessionId = summary.session_id;
+          const filepath = `Logography/Sessions/${date}-${sessionId}.md`;
+
+          // Build frontmatter
+          const frontmatter = [
+            '---',
+            `session_id: "${sessionId}"`,
+            `started_at: "${summary.created_at || date}"`,
+            `current_phase: "${summary.phase || 'terrain'}"`,
+            `current_step: "${summary.phase || 'terrain'}"`,
+            `turn_count: ${summary.message_count || 0}`,
+            `completed: ${summary.completed}`,
+            `entry_type: "migrated"`,
+            `scenes: []`,
+            `beliefs: []`,
+            `summary: "Migrated from server. ${summary.message_count} messages."`,
+            '---',
+          ].join('\n');
+
+          // Build conversation
+          const conversation = detail.conversation.map(m => {
+            const label = m.role === 'user' ? 'You' : 'Logography';
+            return `**${label}:** ${m.content}`;
+          }).join('\n\n');
+
+          const content = `${frontmatter}\n\n# Logography Session — ${date}\n\n${conversation}\n\n---\n*Migrated from server*\n`;
+
+          // 4. Write to vault
+          const existing = this.plugin.vaultStorage.getVault().getAbstractFileByPath(filepath);
+          if (existing) {
+            skipped++;
+            continue;
+          }
+
+          // Ensure parent folder exists
+          const folder = 'Logography/Sessions';
+          if (!this.plugin.vaultStorage.getVault().getAbstractFileByPath(folder)) {
+            await this.plugin.vaultStorage.getVault().createFolder(folder);
+          }
+
+          await this.plugin.vaultStorage.getVault().create(filepath, content);
+          imported++;
+        } catch (err) {
+          console.error(`Failed to import session ${summary.session_id}:`, err);
+          skipped++;
+        }
+      }
+
+      new Notice(`Import complete: ${imported} imported, ${skipped} skipped.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Import failed';
+      new Notice(`Import failed: ${msg}`);
+    }
   }
 
   private renderStatus(): void {

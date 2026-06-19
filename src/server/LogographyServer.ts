@@ -47,6 +47,22 @@ export interface MetricsPayload {
   };
 }
 
+export interface ServerSessionSummary {
+  session_id: string;
+  title: string;
+  created_at: string;
+  completed: boolean;
+  message_count: number;
+  phase: string;
+}
+
+export interface ServerSessionDetail {
+  session_id: string;
+  conversation: Array<{ role: string; content: string; timestamp?: string }>;
+  completed: boolean;
+  phase: string;
+}
+
 export class LogographyServer {
   private serverUrl: string;
   private apiKey: string;
@@ -122,6 +138,16 @@ export class LogographyServer {
 
   async health(): Promise<{ status: string; model: string }> {
     return this.request('GET', '/api/health');
+  }
+
+  // --- Session Migration (one-time import from server to vault) ---
+
+  async listServerSessions(): Promise<ServerSessionSummary[]> {
+    return this.request('GET', `/api/sessions/${this.userId}`);
+  }
+
+  async getServerSessionMessages(sessionId: string): Promise<ServerSessionDetail> {
+    return this.request('GET', `/api/sessions/${this.userId}/${sessionId}/messages`);
   }
 
   // --- Internal ---
