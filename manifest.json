@@ -1,8 +1,8 @@
 {
   "id": "logography",
   "name": "Logography",
-  "version": "0.2.2",
-  "description": "AI dream analysis using Philosophical Midwifery — Pierre Grimes' Socratic method for self-examination through dreams",
+  "version": "0.3.0",
+  "description": "Analyze dreams and explore personal beliefs through guided Socratic dialogue. Sessions stay in your vault as Markdown.",
   "author": "protostate",
   "minAppVersion": "1.0.0",
   "isDesktopOnly": false

@@ -54,13 +54,13 @@ export default class LogographyPlugin extends Plugin {
 
     // Commands
     this.addCommand({
-      id: 'open-logography',
+      id: 'open',
       name: 'Open Logography',
       callback: () => this.activateView(),
     });
 
     this.addCommand({
-      id: 'new-logography-session',
+      id: 'new-session',
       name: 'Logography: New Session',
       callback: () => {
         this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => leaf.detach());
