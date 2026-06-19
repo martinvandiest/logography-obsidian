@@ -1,18 +1,18 @@
 // Logography — Obsidian Plugin for AI Dream Analysis
-// Based on Pierre Grimes' Philosophical Midwifery
-// Architecture: Plugin is UI client. Server is the brain.
-import { Plugin, WorkspaceLeaf } from "obsidian";
-import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from "./settings";
-import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from "./views/LogographyView";
-import { LogographyServer } from "./server/LogographyServer";
-import { VaultStorage } from "./storage/VaultStorage";
-import { AuthorMemory } from "./storage/AuthorMemory";
+// Architecture: Vault as source of truth. Plugin is the brain, server is the tongue.
+
+import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from './settings';
+import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from './views/LogographyView';
+import { LogographyServer } from './server/LogographyServer';
+import { VaultStorage } from './storage/VaultStorage';
+import { MetricsReporter } from './metrics/MetricsReporter';
 
 export default class LogographyPlugin extends Plugin {
   settings: LogographySettings;
   server: LogographyServer;
   vaultStorage: VaultStorage;
-  authorMemory: AuthorMemory;
+  metricsReporter: MetricsReporter;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -30,58 +30,51 @@ export default class LogographyPlugin extends Plugin {
       this.settings.userId
     );
 
-    // Initialize vault storage and author memory
+    // Initialize vault storage
     this.vaultStorage = new VaultStorage(this.app);
-    this.authorMemory = new AuthorMemory(this.vaultStorage);
-
-    // Ensure vault folders exist
     await this.vaultStorage.ensureFolders();
 
-    // Load author memory
-    if (this.settings.enableAuthorMemory) {
-      await this.authorMemory.load();
-    }
+    // Initialize metrics reporter
+    this.metricsReporter = new MetricsReporter(this.server);
 
     // Register the chat view
     this.registerView(VIEW_TYPE_LOGOGRAPHY, (leaf) => new LogographyView(leaf, this));
 
-    // Ribbon icon — opens the chat pane
-    this.addRibbonIcon("brain", "Open Logography", () => {
+    // Ribbon icon
+    this.addRibbonIcon('brain', 'Open Logography', () => {
       this.activateView();
     });
 
-    // Command palette: open Logography
+    // Commands
     this.addCommand({
-      id: "open-logography",
-      name: "Open Logography",
+      id: 'open-logography',
+      name: 'Open Logography',
       callback: () => this.activateView(),
     });
 
-    // Command palette: new session
     this.addCommand({
-      id: "new-logography-session",
-      name: "Logography: New Session",
+      id: 'new-logography-session',
+      name: 'Logography: New Session',
       callback: () => {
         this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => leaf.detach());
         this.activateView();
       },
     });
 
-    // Sleepy UI: Quick Capture — opens pane and focuses input immediately
     this.addCommand({
-      id: "quick-capture",
-      name: "Logography: Quick Capture",
+      id: 'quick-capture',
+      name: 'Logography: Quick Capture',
       callback: () => this.quickCapture(),
     });
 
     // Settings tab
     this.addSettingTab(new LogographySettingTab(this.app, this));
 
-    console.log("Logography loaded — Philosophical Midwifery for Obsidian");
+    console.log('Logography loaded — Philosophical Midwifery for Obsidian');
   }
 
   async onunload(): Promise<void> {
-    console.log("Logography unloaded");
+    console.log('Logography unloaded');
   }
 
   async loadSettings(): Promise<void> {
@@ -90,9 +83,9 @@ export default class LogographyPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
-    // Update server client with new settings
     if (this.server) {
       this.server.updateConfig(this.settings.serverUrl, this.settings.apiKey);
+      this.server.updateUserId(this.settings.userId);
     }
   }
 
@@ -101,7 +94,6 @@ export default class LogographyPlugin extends Plugin {
 
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
     if (!leaf) {
-      // Open in right sidebar
       leaf = workspace.getRightLeaf(false) || workspace.getLeaf();
       await leaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
     }
@@ -109,7 +101,6 @@ export default class LogographyPlugin extends Plugin {
     workspace.revealLeaf(leaf);
   }
 
-  // Sleepy UI: open pane and focus input in one action
   async quickCapture(): Promise<void> {
     await this.activateView();
     const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY);

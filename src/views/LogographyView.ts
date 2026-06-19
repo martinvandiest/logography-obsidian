@@ -1,21 +1,30 @@
 // Logography Chat View — sidebar pane for dream analysis
-// Thin UI client. All intelligence lives on the server.
-import { ItemView, WorkspaceLeaf } from "obsidian";
-import type LogographyPlugin from "../main";
-import type { ServerResponse } from "../server/LogographyServer";
+// Vault as source of truth. Plugin is the brain, server is the tongue.
 
-export const VIEW_TYPE_LOGOGRAPHY = "logography-chat-view";
+import { ItemView, WorkspaceLeaf } from 'obsidian';
+import type LogographyPlugin from '../main';
+import { SessionState, createSession, currentStep, currentBelief, PhaseSignal } from '../engine/types';
+import { StateMachine } from '../engine/StateMachine';
+import { CrossSessionMemory } from '../engine/CrossSessionMemory';
+import { summarizeSession } from '../engine/SessionSummarizer';
+
+export const VIEW_TYPE_LOGOGRAPHY = 'logography-chat-view';
 
 export class LogographyView extends ItemView {
   plugin: LogographyPlugin;
   private messagesEl: HTMLElement;
   private inputEl: HTMLTextAreaElement;
   private phaseEl: HTMLElement;
-  private sessionId: string | null = null;
+  private sessionState: SessionState | null = null;
+  private stateMachine: StateMachine;
+  private crossSessionMemory: CrossSessionMemory;
+  private sessionStartTime: number = 0;
 
   constructor(leaf: WorkspaceLeaf, plugin: LogographyPlugin) {
     super(leaf);
     this.plugin = plugin;
+    this.stateMachine = new StateMachine();
+    this.crossSessionMemory = new CrossSessionMemory(plugin.vaultStorage);
   }
 
   getViewType(): string {
@@ -23,133 +32,258 @@ export class LogographyView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Logography";
+    return 'Logography';
   }
 
   getIcon(): string {
-    return "brain";
+    return 'brain';
   }
 
   async onOpen(): Promise<void> {
     const container = this.contentEl;
     container.empty();
-    container.addClass("logography-chat-container");
+    container.addClass('logography-chat-container');
 
     // Header with new session button
-    const header = container.createDiv("logography-header");
-    header.createEl("span", { text: "Logography", cls: "logography-title" });
-    const newSessionBtn = header.createEl("button", {
-      text: "New Session",
-      cls: "logography-new-session-btn",
+    const header = container.createDiv('logography-header');
+    header.createEl('span', { text: 'Logography', cls: 'logography-title' });
+    const newSessionBtn = header.createEl('button', {
+      text: 'New Session',
+      cls: 'logography-new-session-btn',
     });
-    newSessionBtn.addEventListener("click", () => this.startNewSession());
+    newSessionBtn.addEventListener('click', () => this.startNewSession());
 
     // Phase indicator
-    this.phaseEl = container.createDiv("logography-phase-indicator");
-    this.updatePhaseIndicator("I", "opening");
+    this.phaseEl = container.createDiv('logography-phase-indicator');
 
     // Messages area
-    this.messagesEl = container.createDiv("logography-messages");
+    this.messagesEl = container.createDiv('logography-messages');
 
     // Input area
-    const inputArea = container.createDiv("logography-input-area");
-    this.inputEl = inputArea.createEl("textarea", {
-      cls: "logography-input",
+    const inputArea = container.createDiv('logography-input-area');
+    this.inputEl = inputArea.createEl('textarea', {
+      cls: 'logography-input',
       attr: {
-        placeholder: "Share a dream, a problem, or a question...",
-        rows: "2",
+        placeholder: 'Share a dream, a problem, or a question...',
+        rows: '2',
       },
     });
 
-    const sendBtn = inputArea.createEl("button", {
-      text: "Send",
-      cls: "logography-send-btn mod-cta",
+    const sendBtn = inputArea.createEl('button', {
+      text: 'Send',
+      cls: 'logography-send-btn mod-cta',
     });
 
     // Event listeners
-    sendBtn.addEventListener("click", () => this.handleSend());
-    this.inputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+    sendBtn.addEventListener('click', () => this.handleSend());
+    this.inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         this.handleSend();
       }
     });
 
     // Auto-resize textarea
-    this.inputEl.addEventListener("input", () => {
-      this.inputEl.style.height = "auto";
-      this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + "px";
+    this.inputEl.addEventListener('input', () => {
+      this.inputEl.style.height = 'auto';
+      this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + 'px';
     });
 
-    // Sleepy UI: auto-focus input so dreamer can start typing immediately
+    // Sleepy UI: auto-focus input
     setTimeout(() => this.inputEl.focus(), 50);
 
-    // Initial greeting
-    this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
+    // Load or create session
+    await this.loadOrCreateSession();
   }
 
   async onClose(): Promise<void> {
-    // Save session on close if there's content
-    if (this.sessionId && this.plugin.settings.enableAuthorMemory) {
-      try {
-        const summary = await this.plugin.server.reviewSession();
-        if (summary.summary) {
-          this.plugin.authorMemory.queueUpdate(summary.summary);
-        }
-      } catch {
-        // Silent fail — non-critical
+    // Save session on close
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+  }
+
+  private async loadOrCreateSession(): Promise<void> {
+    // Try to resume latest incomplete session
+    const existing = await this.plugin.vaultStorage.loadLatestSession();
+    if (existing) {
+      this.sessionState = existing;
+      this.sessionStartTime = Date.now();
+      this.updatePhaseIndicator(existing.currentPhase, currentStep(existing));
+
+      // Re-render conversation
+      for (const msg of existing.conversation) {
+        this.addMessage(msg.role, msg.content);
       }
+
+      if (existing.conversation.length === 0) {
+        this.addMessage('assistant', 'Welcome back. Would you like to continue where we left off?');
+      }
+    } else {
+      await this.startNewSession();
     }
   }
 
   private async handleSend(): Promise<void> {
     const text = this.inputEl.value.trim();
-    if (!text) return;
+    if (!text || !this.sessionState) return;
 
     // Local crisis detection
     if (this.detectCrisis(text)) {
-      this.addMessage("assistant", "I want to pause here. If you're in crisis, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Crisis Text Line (text HOME to 741741). You don't have to face this alone.");
-      this.inputEl.value = "";
+      this.addMessage('assistant', 'I want to pause here. If you\'re in crisis, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Crisis Text Line (text HOME to 741741). You don\'t have to face this alone.');
+      this.inputEl.value = '';
       return;
     }
 
     // Add user message to UI
-    this.addMessage("user", text);
-    this.inputEl.value = "";
-    this.inputEl.style.height = "auto";
+    this.addMessage('user', text);
+    this.inputEl.value = '';
+    this.inputEl.style.height = 'auto';
+
+    // Add to state conversation
+    this.sessionState.conversation.push({
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Track entry type on first message
+    if (this.sessionState.turnCount === 0) {
+      this.sessionState.entryType = this.detectEntryType(text);
+      this.sessionState.rawNarration = text;
+    }
 
     try {
       // Show thinking indicator
-      const thinkingEl = this.addMessage("assistant", "...");
-      thinkingEl.addClass("logography-thinking");
+      const thinkingEl = this.addMessage('assistant', '...');
+      thinkingEl.addClass('logography-thinking');
 
-      // Send to server — server handles prompts, state machine, LLM
-      const response = await this.plugin.server.sendMessage(text);
+      // Build cross-session context
+      const crossSessionContext = await this.crossSessionMemory.buildContext(this.sessionState.sessionId);
 
-      // Remove thinking indicator and show response
+      // Send to server (stateless inference)
+      const response = await this.plugin.server.sendVaultMessage(
+        text,
+        this.sessionState,
+        crossSessionContext,
+        this.sessionState.faithTradition
+      );
+
+      // Remove thinking indicator
       thinkingEl.remove();
-      this.addMessage("assistant", response.text);
 
-      // Update phase indicator from server response
-      this.updatePhaseIndicator(response.phase, response.step);
-      this.sessionId = response.session_id;
+      // Parse LLM response for phase signals
+      const { signal, detail } = this.stateMachine.parseSignal(response.text);
+      const cleanText = this.stateMachine.stripSignal(response.text);
 
-      // Save session to vault (local backup)
-      if (this.plugin.settings.enableAuthorMemory) {
-        await this.saveToVault(text, response);
+      // Display AI response
+      this.addMessage('assistant', cleanText);
+
+      // Add to state conversation
+      this.sessionState.conversation.push({
+        role: 'assistant',
+        content: cleanText,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Process phase signal and advance state
+      this.stateMachine.processSignal(this.sessionState, signal, detail);
+
+      // Update phase indicator
+      this.updatePhaseIndicator(this.sessionState.currentPhase, currentStep(this.sessionState));
+
+      // Save to vault
+      await this.saveSession();
+
+      // If session completed, compute summary and push metrics
+      if (this.sessionState.completed) {
+        await this.onSessionComplete();
       }
 
     } catch (error) {
       // Remove thinking indicator
-      const thinking = this.messagesEl.querySelector(".logography-thinking");
+      const thinking = this.messagesEl.querySelector('.logography-thinking');
       if (thinking) thinking.remove();
 
-      const errorMsg = error instanceof Error ? error.message : "Connection error";
-      this.addMessage("assistant", errorMsg);
+      const errorMsg = error instanceof Error ? error.message : 'Connection error';
+      this.addMessage('assistant', errorMsg);
     }
   }
 
-  private addMessage(role: "user" | "assistant", text: string): HTMLElement {
+  private async saveSession(): Promise<void> {
+    if (!this.sessionState) return;
+    try {
+      await this.plugin.vaultStorage.saveSession(this.sessionState);
+    } catch (err) {
+      console.error('Failed to save session to vault:', err);
+    }
+  }
+
+  private async onSessionComplete(): Promise<void> {
+    if (!this.sessionState) return;
+
+    // Compute summary for frontmatter
+    const summaryData = summarizeSession(this.sessionState);
+    this.sessionState.summary = summaryData.summary;
+
+    // Save final state with summary
+    await this.saveSession();
+
+    // Push metrics (fire-and-forget)
+    const durationMinutes = Math.round((Date.now() - this.sessionStartTime) / 60000);
+    const phasesCompleted = this.getPhasesCompleted();
+    const deflated = this.sessionState.beliefs.filter(b => b.status === 'deflated' || b.status === 'partially_deflated').length;
+
+    this.plugin.server.sendMetrics({
+      user_id: this.sessionState.userId,
+      session_id: this.sessionState.sessionId,
+      metrics: {
+        turn_count: this.sessionState.turnCount,
+        duration_minutes: durationMinutes,
+        phases_completed: phasesCompleted,
+        beliefs_surfaced: this.sessionState.beliefs.length,
+        beliefs_deflated: deflated,
+        understanding_score: 0, // Will be set by user UI later
+        entry_type: this.sessionState.entryType || 'session',
+        completed: true,
+      },
+    });
+  }
+
+  private getPhasesCompleted(): string[] {
+    if (!this.sessionState) return [];
+    const allPhases = ['terrain', 'scenes', 'diagram', 'cross_exam', 'integration'];
+    const currentIdx = allPhases.indexOf(this.sessionState.currentPhase);
+    return allPhases.slice(0, currentIdx + 1);
+  }
+
+  private async startNewSession(): Promise<void> {
+    // Save any existing session first
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+
+    // Count existing sessions for numbering
+    const existingSessions = await this.plugin.vaultStorage.listSessions();
+    const sessionNumber = existingSessions.length + 1;
+
+    // Create new session
+    this.sessionState = createSession(
+      this.plugin.settings.userId,
+      sessionNumber,
+      this.plugin.settings.faithTradition
+    );
+    this.sessionStartTime = Date.now();
+
+    // Clear UI
+    this.messagesEl.empty();
+    this.updatePhaseIndicator(this.sessionState.currentPhase, currentStep(this.sessionState));
+
+    // Initial greeting
+    this.addMessage('assistant', 'What would you like to explore today? A dream, a problem, a question about yourself?');
+  }
+
+  private addMessage(role: 'user' | 'assistant', text: string): HTMLElement {
     const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
     msgEl.textContent = text;
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
@@ -158,49 +292,24 @@ export class LogographyView extends ItemView {
 
   private updatePhaseIndicator(phase: string, step: string): void {
     const phaseNames: Record<string, string> = {
-      I: "Terrain",
-      II: "Scenes",
-      III: "Analysis",
-      IV: "Cross-Examination",
-      V: "Integration",
-      terrain: "Terrain",
-      scenes: "Scenes",
-      diagram: "Analysis",
-      cross_exam: "Cross-Examination",
-      integration: "Integration",
+      terrain: 'I: Terrain',
+      scenes: 'II: Scenes',
+      diagram: 'III: Analysis',
+      cross_exam: 'IV: Cross-Examination',
+      integration: 'V: Integration',
     };
     const phaseName = phaseNames[phase] || phase;
-    const stepName = step.replace(/_/g, " ");
-    this.phaseEl.textContent = `Phase ${phase}: ${phaseName} — ${stepName}`;
+    const stepName = step.replace(/_/g, ' ');
+    this.phaseEl.textContent = `${phaseName} — ${stepName}`;
   }
 
-  private async saveToVault(userMessage: string, response: ServerResponse): Promise<void> {
-    try {
-      // Append to a running session file in the vault
-      const sessionFile = `Logography/Sessions/${new Date().toISOString().slice(0, 10)}-session.md`;
-      const existing = this.plugin.vaultStorage.getVault().getAbstractFileByPath(sessionFile);
-
-      const entry = `\n\n**You:** ${userMessage}\n\n**Guide:** ${response.text}\n`;
-
-      if (existing) {
-        await this.plugin.vaultStorage.getVault().process(existing as any, (data) => data + entry);
-      } else {
-        const header = `# Logography Session — ${new Date().toLocaleDateString()}\n\n*Phase: ${response.phase} | Step: ${response.step}*\n`;
-        await this.plugin.vaultStorage.getVault().create(sessionFile, header + entry);
-      }
-    } catch {
-      // Silent fail — vault storage is non-critical
-    }
+  private detectEntryType(text: string): 'dream' | 'problem' | 'question' {
+    const lower = text.toLowerCase();
+    if (lower.includes('dream') || lower.includes('nightmare') || lower.includes('sleep')) return 'dream';
+    if (lower.includes('?') || lower.includes('how') || lower.includes('why') || lower.includes('what')) return 'question';
+    return 'problem';
   }
 
-  private startNewSession(): void {
-    this.sessionId = null;
-    this.messagesEl.empty();
-    this.updatePhaseIndicator("I", "opening");
-    this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
-  }
-
-  // Sleepy UI: expose focus for Quick Capture command
   focusInput(): void {
     if (this.inputEl) {
       this.inputEl.focus();
@@ -209,9 +318,9 @@ export class LogographyView extends ItemView {
 
   private detectCrisis(text: string): boolean {
     const crisisKeywords = [
-      "kill myself", "suicide", "want to die", "end my life",
-      "self harm", "hurting myself", "no reason to live",
-      "better off dead", "can't go on", "give up on life",
+      'kill myself', 'suicide', 'want to die', 'end my life',
+      'self harm', 'hurting myself', 'no reason to live',
+      'better off dead', 'can\'t go on', 'give up on life',
     ];
     const lower = text.toLowerCase();
     return crisisKeywords.some(keyword => lower.includes(keyword));

@@ -1,36 +1,44 @@
-// Logography Server Client — thin client for the Logography API
-// All intelligence lives on the server. This is just HTTP.
+// Logography Server Client — stateless inference passthrough
+// Server authenticates, routes to AI model, returns response. Stores nothing.
 
-import { requestUrl, RequestUrlParam } from "obsidian";
+import { requestUrl, RequestUrlParam } from 'obsidian';
+import { SessionState, PhaseValue } from '../engine/types';
+import { CrossSessionContext } from '../engine/CrossSessionMemory';
 
-export interface ServerResponse {
+export interface VaultChatRequest {
+  message: string;
+  session_state: Record<string, unknown>;
+  cross_session_context: Record<string, unknown>;
+  faith_tradition?: string;
+  session_id: string;
+}
+
+export interface VaultChatResponse {
   text: string;
-  phase: string;
-  step: string;
-  turn_count: number;
-  phase_changed: boolean;
-  session_completed: boolean;
+  updated_session_state: Record<string, unknown>;
   session_id: string;
 }
 
-export interface SessionStatus {
-  session_id: string;
-  phase: string;
-  step: string;
-  turn_count: number;
-  scenes_count: number;
-  beliefs_count: number;
-  beliefs: { statement: string; status: string }[];
-  completed: boolean;
+export interface AuthResponse {
+  token: string;
+  user_id: string;
+  email: string;
+  mfa_required?: boolean;
 }
 
-export interface SessionSummary {
+export interface MetricsPayload {
+  user_id: string;
   session_id: string;
-  title: string;
-  created_at: string;
-  completed: boolean;
-  message_count: number;
-  phase: string;
+  metrics: {
+    turn_count: number;
+    duration_minutes: number;
+    phases_completed: string[];
+    beliefs_surfaced: number;
+    beliefs_deflated: number;
+    understanding_score: number;
+    entry_type: string;
+    completed: boolean;
+  };
 }
 
 export class LogographyServer {
@@ -39,25 +47,89 @@ export class LogographyServer {
   private userId: string;
 
   constructor(serverUrl: string, apiKey: string, userId: string) {
-    this.serverUrl = serverUrl.replace(/\/$/, "");
+    this.serverUrl = serverUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
     this.userId = userId;
   }
 
   updateConfig(serverUrl: string, apiKey: string): void {
-    this.serverUrl = serverUrl.replace(/\/$/, "");
+    this.serverUrl = serverUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
   }
 
-  private async request(method: string, path: string, body?: any): Promise<any> {
+  updateUserId(userId: string): void {
+    this.userId = userId;
+  }
+
+  // --- Core API ---
+
+  /**
+   * Send a message via the stateless vault endpoint.
+   * Plugin sends full context; server returns response + updated state.
+   */
+  async sendVaultMessage(
+    message: string,
+    sessionState: SessionState,
+    crossSessionContext: CrossSessionContext,
+    faithTradition?: string
+  ): Promise<VaultChatResponse> {
+    const request: VaultChatRequest = {
+      message,
+      session_state: this.serializeState(sessionState),
+      cross_session_context: crossSessionContext as unknown as Record<string, unknown>,
+      faith_tradition: faithTradition,
+      session_id: sessionState.sessionId,
+    };
+
+    return this.request('POST', '/api/chat/vault', request);
+  }
+
+  /**
+   * Push lightweight session metrics (no content).
+   */
+  async sendMetrics(payload: MetricsPayload): Promise<void> {
+    try {
+      await this.request('POST', '/api/metrics', payload);
+    } catch {
+      // Fire-and-forget — failures are silent
+    }
+  }
+
+  // --- Auth ---
+
+  async login(email: string, password: string): Promise<AuthResponse> {
+    return this.request('POST', '/api/auth/login', { email, password });
+  }
+
+  async signup(email: string, password: string): Promise<AuthResponse> {
+    return this.request('POST', '/api/auth/signup', { email, password });
+  }
+
+  async verifyMfa(email: string, code: string, tempToken: string): Promise<AuthResponse> {
+    return this.request('POST', '/api/auth/mfa/verify', {
+      email,
+      code,
+      temp_token: tempToken,
+    });
+  }
+
+  // --- Health ---
+
+  async health(): Promise<{ status: string; model: string }> {
+    return this.request('GET', '/api/health');
+  }
+
+  // --- Internal ---
+
+  private async request(method: string, path: string, body?: unknown): Promise<any> {
     const params: RequestUrlParam = {
       url: `${this.serverUrl}${path}`,
       method,
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`,
       },
-      contentType: "application/json",
+      contentType: 'application/json',
     };
 
     if (body) {
@@ -67,16 +139,16 @@ export class LogographyServer {
     const response = await requestUrl(params);
 
     if (response.status === 401) {
-      throw new Error("Invalid API key. Check your Logography settings.");
+      throw new Error('Invalid API key. Check your Logography settings.');
     }
     if (response.status === 403) {
-      throw new Error("Account inactive or session limit reached.");
+      throw new Error('Account inactive or session limit reached.');
     }
     if (response.status === 429) {
-      throw new Error("Rate limited. Please wait a moment.");
+      throw new Error('Rate limited. Please wait a moment.');
     }
     if (response.status >= 500) {
-      throw new Error("Server error. Please try again later.");
+      throw new Error('Server error. Please try again later.');
     }
     if (response.status !== 200) {
       throw new Error(`Request failed (${response.status})`);
@@ -85,39 +157,38 @@ export class LogographyServer {
     return response.json;
   }
 
-  async sendMessage(message: string): Promise<ServerResponse> {
-    return this.request("POST", "/api/chat", {
-      user_id: this.userId,
-      message,
-    });
-  }
-
-  async newSession(): Promise<{ session_id: string }> {
-    return this.request("POST", "/api/session/new", {
-      user_id: this.userId,
-    });
-  }
-
-  async getSessionStatus(): Promise<SessionStatus> {
-    return this.request("GET", `/api/session/${this.userId}`);
-  }
-
-  async listSessions(): Promise<SessionSummary[]> {
-    return this.request("GET", `/api/sessions/${this.userId}`);
-  }
-
-  async loadSession(sessionId: string): Promise<any> {
-    return this.request("POST", "/api/sessions/load", {
-      user_id: this.userId,
-      session_id: sessionId,
-    });
-  }
-
-  async reviewSession(): Promise<{ summary: string }> {
-    return this.request("POST", `/api/review/${this.userId}`);
-  }
-
-  async health(): Promise<{ status: string; model: string }> {
-    return this.request("GET", "/api/health");
+  /**
+   * Serialize SessionState for the API request.
+   * Converts camelCase to snake_case for the Python backend.
+   */
+  private serializeState(state: SessionState): Record<string, unknown> {
+    return {
+      session_id: state.sessionId,
+      user_id: state.userId,
+      session_number: state.sessionNumber,
+      started_at: state.startedAt,
+      current_phase: state.currentPhase,
+      current_step: state.currentPhase, // Will be computed by backend
+      turn_count: state.turnCount,
+      entry_type: state.entryType,
+      scenes: state.scenes.map(s => ({
+        id: s.id,
+        description: s.description,
+        emotional_charge: s.emotionalCharge,
+        negative_state: s.negativeState,
+        selected: s.selected,
+      })),
+      beliefs: state.beliefs.map(b => ({
+        id: b.id,
+        statement: b.statement,
+        status: b.status,
+        origin_scene: b.originScene,
+        origin_traced: b.originTraced,
+        contradictions_tested: b.contradictionsTested,
+        deflation_level: b.deflationLevel,
+      })),
+      current_belief_idx: state.currentBeliefIdx,
+      completed: state.completed,
+    };
   }
 }

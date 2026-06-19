@@ -31,13 +31,40 @@ var import_obsidian5 = require("obsidian");
 
 // src/settings.ts
 var import_obsidian = require("obsidian");
+var FAITH_TRADITIONS = [
+  { value: "", label: "None" },
+  { value: "buddhist", label: "Buddhist" },
+  { value: "christian.catholic", label: "Christian \u2014 Catholic" },
+  { value: "christian.protestant", label: "Christian \u2014 Protestant" },
+  { value: "christian.orthodox", label: "Christian \u2014 Orthodox" },
+  { value: "hindu", label: "Hindu" },
+  { value: "jewish", label: "Jewish" },
+  { value: "muslim", label: "Muslim" },
+  { value: "shinto", label: "Shinto" },
+  { value: "taoist", label: "Taoist" },
+  { value: "sikh", label: "Sikh" },
+  { value: "indigenous", label: "Indigenous / First Nations" },
+  { value: "pagan", label: "Pagan / Wiccan" },
+  { value: "bahai", label: "Bah\xE1'\xED" },
+  { value: "jain", label: "Jain" },
+  { value: "zoroastrian", label: "Zoroastrian" },
+  { value: "secular", label: "Secular / Non-religious" },
+  { value: "philosophical", label: "Philosophical (Platonic, Stoic, etc.)" },
+  { value: "syncretic", label: "Syncretic / Multiple traditions" }
+];
+var MODELS = [
+  { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet (default)" },
+  { value: "anthropic/claude-haiku", label: "Claude Haiku (faster)" },
+  { value: "openai/gpt-4o", label: "GPT-4o" }
+];
 var DEFAULT_SETTINGS = {
   serverUrl: "https://logographyapp.com",
   apiKey: "",
   userId: "",
-  enableAuthorMemory: true,
-  shareMemoryWithAI: true,
-  userName: ""
+  userName: "",
+  faithTradition: "",
+  recoveryMode: false,
+  model: "anthropic/claude-sonnet-4"
 };
 var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
@@ -48,46 +75,54 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: "Logography Settings" });
-    containerEl.createEl("h3", { text: "Server" });
+    containerEl.createEl("h3", { text: "Account" });
     new import_obsidian.Setting(containerEl).setName("Server URL").setDesc("Your Logography server address").addText(
       (text) => text.setPlaceholder("https://logographyapp.com").setValue(this.plugin.settings.serverUrl).onChange(async (value) => {
         this.plugin.settings.serverUrl = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("API Key").setDesc("Your Logography API key (stored in plugin settings)").addText((text) => {
+    new import_obsidian.Setting(containerEl).setName("API key").setDesc("Your Logography API key (stored securely)").addText((text) => {
       text.inputEl.type = "password";
       text.setPlaceholder("logography-...").setValue(this.plugin.settings.apiKey).onChange(async (value) => {
         this.plugin.settings.apiKey = value;
         await this.plugin.saveSettings();
       });
     });
-    new import_obsidian.Setting(containerEl).setName("User ID").setDesc("Your Logography account ID (auto-assigned on signup)").addText(
-      (text) => text.setPlaceholder("obsidian_user_abc123").setValue(this.plugin.settings.userId).onChange(async (value) => {
-        this.plugin.settings.userId = value;
-        await this.plugin.saveSettings();
-      })
-    );
     containerEl.createEl("h3", { text: "Session" });
-    new import_obsidian.Setting(containerEl).setName("Your Name").setDesc("How the guide addresses you (optional)").addText(
+    new import_obsidian.Setting(containerEl).setName("Your name").setDesc("How the guide addresses you (optional)").addText(
       (text) => text.setPlaceholder("Enter your name").setValue(this.plugin.settings.userName).onChange(async (value) => {
         this.plugin.settings.userName = value;
         await this.plugin.saveSettings();
       })
     );
-    containerEl.createEl("h3", { text: "Privacy" });
-    new import_obsidian.Setting(containerEl).setName("Enable Author Memory").setDesc("Track patterns across sessions (stored locally only)").addToggle(
-      (toggle) => toggle.setValue(this.plugin.settings.enableAuthorMemory).onChange(async (value) => {
-        this.plugin.settings.enableAuthorMemory = value;
+    new import_obsidian.Setting(containerEl).setName("Faith tradition").setDesc("Informs the AI's language and framing (optional)").addDropdown((dropdown) => {
+      for (const tradition of FAITH_TRADITIONS) {
+        dropdown.addOption(tradition.value, tradition.label);
+      }
+      dropdown.setValue(this.plugin.settings.faithTradition);
+      dropdown.onChange(async (value) => {
+        this.plugin.settings.faithTradition = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian.Setting(containerEl).setName("Recovery support").setDesc("12-step recovery framework (stacks with faith tradition)").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.recoveryMode).onChange(async (value) => {
+        this.plugin.settings.recoveryMode = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Share Memory with AI").setDesc("Include cross-session memory in AI prompts").addToggle(
-      (toggle) => toggle.setValue(this.plugin.settings.shareMemoryWithAI).onChange(async (value) => {
-        this.plugin.settings.shareMemoryWithAI = value;
+    containerEl.createEl("h3", { text: "AI Model" });
+    new import_obsidian.Setting(containerEl).setName("Model").setDesc("Which AI model to use for analysis").addDropdown((dropdown) => {
+      for (const model of MODELS) {
+        dropdown.addOption(model.value, model.label);
+      }
+      dropdown.setValue(this.plugin.settings.model);
+      dropdown.onChange(async (value) => {
+        this.plugin.settings.model = value;
         await this.plugin.saveSettings();
-      })
-    );
+      });
+    });
     containerEl.createEl("h3", { text: "Status" });
     const statusEl = containerEl.createDiv();
     statusEl.createEl("p", {
@@ -96,17 +131,651 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     statusEl.createEl("p", {
       text: `User ID: ${this.plugin.settings.userId || "Not configured"}`
     });
+    statusEl.createEl("p", {
+      text: `Data: Stored in your Obsidian vault (Logography/ folder)`
+    });
   }
 };
 
 // src/views/LogographyView.ts
 var import_obsidian2 = require("obsidian");
+
+// src/engine/types.ts
+var Phase = {
+  TERRAIN: "terrain",
+  SCENES: "scenes",
+  DIAGRAM: "diagram",
+  CROSS_EXAM: "cross_exam",
+  INTEGRATION: "integration"
+};
+var PHASE_ORDER = [
+  Phase.TERRAIN,
+  Phase.SCENES,
+  Phase.DIAGRAM,
+  Phase.CROSS_EXAM,
+  Phase.INTEGRATION
+];
+var PHASE_STEPS = {
+  terrain: ["opening", "dream_narration", "expectations", "goals"],
+  scenes: ["scene_selection", "scene_detail", "high_low", "negative_state", "obstacles", "doorway"],
+  diagram: ["pattern_identification", "belief_hypothesis", "belief_articulation"],
+  cross_exam: ["examine_truth", "trace_origin", "test_contradictions", "examine_consequences", "deflation_test"],
+  integration: ["insight_reflection", "logos_recognition", "excellence_vision", "session_close"]
+};
+function currentStep(state) {
+  return PHASE_STEPS[state.currentPhase][state.currentStepIdx];
+}
+function createSession(userId, sessionNumber, faithTradition) {
+  return {
+    sessionId: crypto.randomUUID().slice(0, 8),
+    userId,
+    sessionNumber,
+    startedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    currentPhase: Phase.TERRAIN,
+    currentStepIdx: 0,
+    scenes: [],
+    beliefs: [],
+    turnCount: 0,
+    completed: false,
+    conversation: [],
+    faithTradition
+  };
+}
+function stateToDict(state) {
+  return {
+    session_id: state.sessionId,
+    user_id: state.userId,
+    session_number: state.sessionNumber,
+    started_at: state.startedAt,
+    current_phase: state.currentPhase,
+    current_step: currentStep(state),
+    turn_count: state.turnCount,
+    entry_type: state.entryType,
+    scenes: state.scenes.map((s) => ({
+      id: s.id,
+      description: s.description,
+      emotional_charge: s.emotionalCharge,
+      negative_state: s.negativeState,
+      selected: s.selected
+    })),
+    beliefs: state.beliefs.map((b) => ({
+      id: b.id,
+      statement: b.statement,
+      status: b.status,
+      origin_scene: b.originScene,
+      origin_traced: b.originTraced,
+      contradictions_tested: b.contradictionsTested,
+      deflation_level: b.deflationLevel
+    })),
+    current_belief_idx: state.currentBeliefIdx,
+    completed: state.completed,
+    faith_tradition: state.faithTradition,
+    summary: state.summary
+  };
+}
+function dictToState(data) {
+  const phase = data.current_phase;
+  const stepIdx = PHASE_STEPS[phase].indexOf(data.current_step);
+  return {
+    sessionId: data.session_id,
+    userId: data.user_id,
+    sessionNumber: data.session_number,
+    startedAt: data.started_at,
+    currentPhase: phase,
+    currentStepIdx: stepIdx >= 0 ? stepIdx : 0,
+    entryType: data.entry_type,
+    scenes: (data.scenes || []).map((s) => ({
+      id: s.id,
+      description: s.description,
+      emotionalCharge: s.emotional_charge || 5,
+      negativeState: s.negative_state,
+      selected: s.selected
+    })),
+    beliefs: (data.beliefs || []).map((b) => ({
+      id: b.id,
+      statement: b.statement,
+      status: b.status,
+      originScene: b.origin_scene,
+      originTraced: b.origin_traced,
+      contradictionsTested: b.contradictions_tested,
+      deflationLevel: b.deflation_level
+    })),
+    currentBeliefIdx: data.current_belief_idx,
+    turnCount: data.turn_count || 0,
+    completed: data.completed || false,
+    conversation: (data.conversation || []).map((m) => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp
+    })),
+    faithTradition: data.faith_tradition,
+    summary: data.summary
+  };
+}
+
+// src/engine/StateMachine.ts
+var StateMachine = class {
+  /**
+   * Process an LLM signal and advance the session state.
+   * Returns updated state (mutates in place).
+   */
+  processSignal(state, signal, _detail = "") {
+    state.turnCount += 1;
+    switch (signal) {
+      case "advance_step":
+        this.advanceStep(state);
+        break;
+      case "advance_phase":
+        this.advancePhase(state);
+        break;
+      case "recurse_phase_iv":
+        state.currentPhase = Phase.CROSS_EXAM;
+        state.currentStepIdx = 0;
+        break;
+      case "pause":
+        state.completed = true;
+        break;
+      case "distress":
+        state.currentPhase = Phase.INTEGRATION;
+        state.currentStepIdx = 0;
+        break;
+    }
+    return state;
+  }
+  /**
+   * Parse the signal JSON from the LLM response.
+   * Looks for {"phase_signal": "...", "signal_detail": "..."} at the end of the response.
+   */
+  parseSignal(responseText) {
+    const jsonMatch = responseText.match(/\{[^}]*"phase_signal"\s*:\s*"([^"]+)"[^}]*\}/);
+    if (jsonMatch) {
+      const signal = jsonMatch[1];
+      const detailMatch = responseText.match(/"signal_detail"\s*:\s*"([^"]*)"/);
+      const detail = detailMatch ? detailMatch[1] : "";
+      return { signal, detail };
+    }
+    return { signal: "continue", detail: "" };
+  }
+  /**
+   * Strip the signal JSON from the response text (user shouldn't see it).
+   */
+  stripSignal(responseText) {
+    return responseText.replace(/\n?\{[^}]*"phase_signal"[^}]*\}\s*$/, "").trim();
+  }
+  advanceStep(state) {
+    const steps = PHASE_STEPS[state.currentPhase];
+    if (state.currentStepIdx < steps.length - 1) {
+      state.currentStepIdx += 1;
+    } else {
+      this.advancePhase(state);
+    }
+  }
+  advancePhase(state) {
+    const currentIdx = PHASE_ORDER.indexOf(state.currentPhase);
+    if (currentIdx < PHASE_ORDER.length - 1) {
+      state.currentPhase = PHASE_ORDER[currentIdx + 1];
+      state.currentStepIdx = 0;
+    } else {
+      state.completed = true;
+    }
+  }
+};
+
+// src/engine/CrossSessionMemory.ts
+var MAX_SUMMARY_TOKENS = 2e3;
+var MAX_EXCHANGES = 5;
+var MAX_SESSIONS_FOR_SUMMARY = 10;
+var MAX_SESSIONS_FOR_EXCHANGES = 3;
+var CrossSessionMemory = class {
+  constructor(storage) {
+    this.storage = storage;
+  }
+  /**
+   * Build cross-session context from vault files.
+   * Reads frontmatter from all sessions (fast), full conversation from last 3.
+   */
+  async buildContext(currentSessionId) {
+    const allSessions = await this.storage.listSessions();
+    const previousSessions = allSessions.filter((s) => s.sessionId !== currentSessionId && s.completed);
+    if (previousSessions.length === 0) {
+      return {
+        recentSessions: [],
+        recentExchanges: [],
+        recurringBeliefs: [],
+        recurringThemes: [],
+        overallTrajectory: "new_user"
+      };
+    }
+    const recentSessions = previousSessions.slice(0, MAX_SESSIONS_FOR_SUMMARY).map((s) => this.extractSummary(s));
+    const recentExchanges = [];
+    for (const session of previousSessions.slice(0, MAX_SESSIONS_FOR_EXCHANGES)) {
+      const exchanges = this.extractExchanges(session);
+      recentExchanges.push(...exchanges);
+    }
+    const recurringBeliefs = this.findRecurringBeliefs(previousSessions);
+    const recurringThemes = this.findRecurringThemes(previousSessions);
+    const overallTrajectory = this.computeTrajectory(previousSessions);
+    return {
+      recentSessions,
+      recentExchanges: recentExchanges.slice(0, MAX_EXCHANGES),
+      recurringBeliefs,
+      recurringThemes,
+      overallTrajectory
+    };
+  }
+  /**
+   * Format cross-session context as a string for injection into the system prompt.
+   * Stays within token budget (~2000 tokens).
+   */
+  formatForPrompt(ctx) {
+    if (ctx.overallTrajectory === "new_user") {
+      return "Cross-session memory: none yet (first session).";
+    }
+    let prompt = "## CROSS-SESSION MEMORY\n\n";
+    if (ctx.recentSessions.length > 0) {
+      prompt += "### Recent Sessions\n";
+      for (const s of ctx.recentSessions.slice(0, 5)) {
+        prompt += `- **${s.date}** (${s.phase}): ${s.summary}
+`;
+        if (s.beliefs.length > 0) {
+          prompt += `  Beliefs: ${s.beliefs.map((b) => `"${b}"`).join(", ")}
+`;
+        }
+      }
+      prompt += "\n";
+    }
+    if (ctx.recurringBeliefs.length > 0) {
+      prompt += "### Recurring Beliefs\n";
+      for (const b of ctx.recurringBeliefs) {
+        prompt += `- "${b}"
+`;
+      }
+      prompt += "\n";
+    }
+    if (ctx.recurringThemes.length > 0) {
+      prompt += `### Recurring Themes: ${ctx.recurringThemes.join(", ")}
+
+`;
+    }
+    if (ctx.recentExchanges.length > 0) {
+      prompt += "### Key Exchanges from Previous Sessions\n";
+      for (const ex of ctx.recentExchanges) {
+        prompt += `(${ex.date})
+User: ${ex.user}
+Guide: ${ex.ai}
+
+`;
+      }
+    }
+    prompt += `### Overall Trajectory: ${ctx.overallTrajectory}
+`;
+    if (prompt.length > MAX_SUMMARY_TOKENS * 4) {
+      prompt = prompt.slice(0, MAX_SUMMARY_TOKENS * 4) + "\n...(truncated)";
+    }
+    return prompt;
+  }
+  // --- Private helpers ---
+  extractSummary(session) {
+    const beliefs = session.beliefs.map((b) => b.statement);
+    const themes = this.extractThemes(session);
+    return {
+      date: session.startedAt.slice(0, 10),
+      summary: session.summary || this.generateBriefSummary(session),
+      beliefs,
+      themes,
+      phase: session.currentPhase,
+      completed: session.completed
+    };
+  }
+  generateBriefSummary(session) {
+    const entryType = session.entryType || "session";
+    const beliefCount = session.beliefs.length;
+    const deflated = session.beliefs.filter((b) => b.status === "deflated").length;
+    if (beliefCount > 0) {
+      return `${entryType} \u2014 ${beliefCount} belief(s) surfaced, ${deflated} deflated.`;
+    }
+    return `${entryType} \u2014 explored ${session.currentPhase} phase.`;
+  }
+  extractThemes(session) {
+    const themes = [];
+    for (const scene of session.scenes) {
+      const words = scene.description.toLowerCase().split(/\s+/);
+      for (const word of words) {
+        if (word.length > 4 && !["about", "would", "could", "there", "their", "which", "being", "having"].includes(word)) {
+          themes.push(word);
+        }
+      }
+    }
+    return [...new Set(themes)].slice(0, 5);
+  }
+  extractExchanges(session) {
+    const exchanges = [];
+    const date = session.startedAt.slice(0, 10);
+    for (let i = 0; i < session.conversation.length - 1; i++) {
+      const curr = session.conversation[i];
+      const next = session.conversation[i + 1];
+      if (curr.role === "user" && next.role === "assistant") {
+        exchanges.push({
+          date,
+          user: curr.content.slice(0, 200),
+          ai: next.content.slice(0, 200)
+        });
+      }
+    }
+    return exchanges.slice(-MAX_EXCHANGES);
+  }
+  findRecurringBeliefs(sessions) {
+    const beliefCounts = /* @__PURE__ */ new Map();
+    for (const session of sessions) {
+      for (const belief of session.beliefs) {
+        const normalized = belief.statement.toLowerCase().trim();
+        beliefCounts.set(normalized, (beliefCounts.get(normalized) || 0) + 1);
+      }
+    }
+    return Array.from(beliefCounts.entries()).filter(([_, count]) => count > 1).map(([belief]) => belief).slice(0, 5);
+  }
+  findRecurringThemes(sessions) {
+    const themeCounts = /* @__PURE__ */ new Map();
+    for (const session of sessions) {
+      const themes = this.extractThemes(session);
+      for (const theme of themes) {
+        themeCounts.set(theme, (themeCounts.get(theme) || 0) + 1);
+      }
+    }
+    return Array.from(themeCounts.entries()).filter(([_, count]) => count > 1).sort((a, b) => b[1] - a[1]).map(([theme]) => theme).slice(0, 5);
+  }
+  computeTrajectory(sessions) {
+    if (sessions.length < 2)
+      return "new_user";
+    const recent = sessions.slice(0, 3);
+    const older = sessions.slice(3, 6);
+    if (older.length === 0)
+      return "stable";
+    const recentDeflationRate = this.deflationRate(recent);
+    const olderDeflationRate = this.deflationRate(older);
+    if (recentDeflationRate > olderDeflationRate + 0.1)
+      return "improving";
+    if (recentDeflationRate < olderDeflationRate - 0.1)
+      return "declining";
+    return "stable";
+  }
+  deflationRate(sessions) {
+    const allBeliefs = sessions.flatMap((s) => s.beliefs);
+    if (allBeliefs.length === 0)
+      return 0;
+    const deflated = allBeliefs.filter((b) => b.status === "deflated" || b.status === "partially_deflated").length;
+    return deflated / allBeliefs.length;
+  }
+};
+
+// src/engine/SessionSummarizer.ts
+function summarizeSession(state) {
+  const messages = state.conversation;
+  const emotionalArc = scoreEmotionalArc(messages);
+  const themes = extractThemes(state);
+  const beliefs = state.beliefs.map((b) => b.statement);
+  const keyExchanges = selectKeyExchanges(messages);
+  const summary = generateSummary(state, emotionalArc, themes, beliefs);
+  return {
+    summary,
+    beliefs,
+    themes,
+    emotionalArc,
+    keyExchanges
+  };
+}
+function generateSummary(state, emotionalArc, themes, beliefs) {
+  const entryType = state.entryType || "session";
+  const phase = state.currentPhase;
+  const turnCount = state.turnCount;
+  let emotionalNote = "";
+  if (emotionalArc.length >= 2) {
+    const first = emotionalArc[0];
+    const last = emotionalArc[emotionalArc.length - 1];
+    const valenceShift = last.valence - first.valence;
+    if (valenceShift > 0.3)
+      emotionalNote = "Emotional shift toward clarity.";
+    else if (valenceShift < -0.3)
+      emotionalNote = "Emotional intensity increased.";
+    else
+      emotionalNote = "Emotional tone remained steady.";
+  }
+  let beliefNote = "";
+  if (beliefs.length > 0) {
+    const deflated = state.beliefs.filter((b) => b.status === "deflated" || b.status === "partially_deflated").length;
+    beliefNote = `${beliefs.length} belief(s) surfaced, ${deflated} deflated.`;
+  }
+  const themeNote = themes.length > 0 ? `Themes: ${themes.slice(0, 3).join(", ")}.` : "";
+  const parts = [`${entryType} (${phase}, ${turnCount} turns).`, emotionalNote, beliefNote, themeNote].filter(Boolean).join(" ");
+  if (parts.length > 250) {
+    return parts.slice(0, 247) + "...";
+  }
+  return parts;
+}
+function scoreEmotionalArc(messages) {
+  const arc = [];
+  let turn = 0;
+  for (const msg of messages) {
+    if (msg.role !== "user")
+      continue;
+    turn++;
+    const text = msg.content.toLowerCase();
+    const valence = estimateValence(text);
+    const arousal = estimateArousal(text);
+    arc.push({ turn, valence, arousal });
+  }
+  return arc;
+}
+function estimateValence(text) {
+  const positive = ["happy", "joy", "peace", "clarity", "insight", "understand", "free", "light", "calm", "relief", "hope", "love", "grateful", "clear", "better", "good", "beautiful", "warm", "safe"];
+  const negative = ["afraid", "scared", "angry", "sad", "confused", "trapped", "stuck", "heavy", "dark", "pain", "fear", "anxiety", "hopeless", "worthless", "lost", "alone", "broken", "hurt", "terrible"];
+  let score = 0;
+  for (const word of positive) {
+    if (text.includes(word))
+      score += 0.1;
+  }
+  for (const word of negative) {
+    if (text.includes(word))
+      score -= 0.1;
+  }
+  return Math.max(-1, Math.min(1, score));
+}
+function estimateArousal(text) {
+  const highArousal = ["terrified", "furious", "screaming", "panic", "overwhelmed", "desperate", "frantic", "explosive", "intense", "extreme", "!!!", "HELP"];
+  const lowArousal = ["calm", "peaceful", "quiet", "gentle", "still", "serene", "soft", "breathe", "relax"];
+  let score = 0.5;
+  for (const word of highArousal) {
+    if (text.includes(word))
+      score += 0.15;
+  }
+  for (const word of lowArousal) {
+    if (text.includes(word))
+      score -= 0.15;
+  }
+  return Math.max(0, Math.min(1, score));
+}
+function extractThemes(state) {
+  const themes = /* @__PURE__ */ new Set();
+  for (const scene of state.scenes) {
+    const words = scene.description.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+    for (const word of words) {
+      if (!STOP_WORDS.has(word))
+        themes.add(word);
+    }
+  }
+  for (const belief of state.beliefs) {
+    const words = belief.statement.toLowerCase().split(/\s+/).filter((w) => w.length > 4);
+    for (const word of words) {
+      if (!STOP_WORDS.has(word))
+        themes.add(word);
+    }
+  }
+  if (state.rawNarration) {
+    const words = state.rawNarration.toLowerCase().split(/\s+/).filter((w) => w.length > 5);
+    for (const word of words.slice(0, 50)) {
+      if (!STOP_WORDS.has(word))
+        themes.add(word);
+    }
+  }
+  return Array.from(themes).slice(0, 8);
+}
+function selectKeyExchanges(messages) {
+  const pairs = [];
+  for (let i = 0; i < messages.length - 1; i++) {
+    const curr = messages[i];
+    const next = messages[i + 1];
+    if (curr.role === "user" && next.role === "assistant") {
+      let score = 0;
+      if (curr.content.length > 100)
+        score += 2;
+      if (curr.content.length > 200)
+        score += 3;
+      const text = curr.content.toLowerCase();
+      if (["feel", "felt", "realized", "understand", "see now", "breakthrough"].some((w) => text.includes(w))) {
+        score += 3;
+      }
+      if (["i am", "i must", "i can't", "i'm not", "i always", "i never"].some((w) => text.includes(w))) {
+        score += 4;
+      }
+      pairs.push({
+        pair: {
+          user: curr.content.slice(0, 200),
+          ai: next.content.slice(0, 200)
+        },
+        score
+      });
+    }
+  }
+  pairs.sort((a, b) => b.score - a.score);
+  return pairs.slice(0, 5).map((p) => p.pair);
+}
+var STOP_WORDS = /* @__PURE__ */ new Set([
+  "about",
+  "after",
+  "again",
+  "also",
+  "another",
+  "back",
+  "been",
+  "before",
+  "being",
+  "between",
+  "came",
+  "could",
+  "don't",
+  "down",
+  "each",
+  "even",
+  "first",
+  "from",
+  "going",
+  "good",
+  "great",
+  "have",
+  "here",
+  "high",
+  "just",
+  "keep",
+  "know",
+  "last",
+  "like",
+  "little",
+  "long",
+  "look",
+  "made",
+  "make",
+  "many",
+  "might",
+  "more",
+  "most",
+  "much",
+  "must",
+  "never",
+  "next",
+  "only",
+  "open",
+  "over",
+  "own",
+  "part",
+  "put",
+  "right",
+  "same",
+  "seem",
+  "should",
+  "show",
+  "small",
+  "some",
+  "something",
+  "stand",
+  "still",
+  "such",
+  "sure",
+  "take",
+  "tell",
+  "than",
+  "that",
+  "their",
+  "them",
+  "then",
+  "there",
+  "these",
+  "they",
+  "thing",
+  "think",
+  "this",
+  "those",
+  "through",
+  "time",
+  "under",
+  "very",
+  "want",
+  "well",
+  "were",
+  "what",
+  "when",
+  "where",
+  "which",
+  "while",
+  "will",
+  "with",
+  "work",
+  "would",
+  "year",
+  "your",
+  "really",
+  "started",
+  "wanted",
+  "didn't",
+  "doesn't",
+  "having",
+  "looking",
+  "trying",
+  "going",
+  "around",
+  "together",
+  "happened",
+  "remember",
+  "suddenly",
+  "everything",
+  "nothing",
+  "someone",
+  "everyone",
+  "another",
+  "already",
+  "become",
+  "because"
+]);
+
+// src/views/LogographyView.ts
 var VIEW_TYPE_LOGOGRAPHY = "logography-chat-view";
 var LogographyView = class extends import_obsidian2.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
-    this.sessionId = null;
+    this.sessionState = null;
+    this.sessionStartTime = 0;
     this.plugin = plugin;
+    this.stateMachine = new StateMachine();
+    this.crossSessionMemory = new CrossSessionMemory(plugin.vaultStorage);
   }
   getViewType() {
     return VIEW_TYPE_LOGOGRAPHY;
@@ -129,7 +798,6 @@ var LogographyView = class extends import_obsidian2.ItemView {
     });
     newSessionBtn.addEventListener("click", () => this.startNewSession());
     this.phaseEl = container.createDiv("logography-phase-indicator");
-    this.updatePhaseIndicator("I", "opening");
     this.messagesEl = container.createDiv("logography-messages");
     const inputArea = container.createDiv("logography-input-area");
     this.inputEl = inputArea.createEl("textarea", {
@@ -155,22 +823,32 @@ var LogographyView = class extends import_obsidian2.ItemView {
       this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + "px";
     });
     setTimeout(() => this.inputEl.focus(), 50);
-    this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
+    await this.loadOrCreateSession();
   }
   async onClose() {
-    if (this.sessionId && this.plugin.settings.enableAuthorMemory) {
-      try {
-        const summary = await this.plugin.server.reviewSession();
-        if (summary.summary) {
-          this.plugin.authorMemory.queueUpdate(summary.summary);
-        }
-      } catch (e) {
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+  }
+  async loadOrCreateSession() {
+    const existing = await this.plugin.vaultStorage.loadLatestSession();
+    if (existing) {
+      this.sessionState = existing;
+      this.sessionStartTime = Date.now();
+      this.updatePhaseIndicator(existing.currentPhase, currentStep(existing));
+      for (const msg of existing.conversation) {
+        this.addMessage(msg.role, msg.content);
       }
+      if (existing.conversation.length === 0) {
+        this.addMessage("assistant", "Welcome back. Would you like to continue where we left off?");
+      }
+    } else {
+      await this.startNewSession();
     }
   }
   async handleSend() {
     const text = this.inputEl.value.trim();
-    if (!text)
+    if (!text || !this.sessionState)
       return;
     if (this.detectCrisis(text)) {
       this.addMessage("assistant", "I want to pause here. If you're in crisis, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Crisis Text Line (text HOME to 741741). You don't have to face this alone.");
@@ -180,16 +858,39 @@ var LogographyView = class extends import_obsidian2.ItemView {
     this.addMessage("user", text);
     this.inputEl.value = "";
     this.inputEl.style.height = "auto";
+    this.sessionState.conversation.push({
+      role: "user",
+      content: text,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    if (this.sessionState.turnCount === 0) {
+      this.sessionState.entryType = this.detectEntryType(text);
+      this.sessionState.rawNarration = text;
+    }
     try {
       const thinkingEl = this.addMessage("assistant", "...");
       thinkingEl.addClass("logography-thinking");
-      const response = await this.plugin.server.sendMessage(text);
+      const crossSessionContext = await this.crossSessionMemory.buildContext(this.sessionState.sessionId);
+      const response = await this.plugin.server.sendVaultMessage(
+        text,
+        this.sessionState,
+        crossSessionContext,
+        this.sessionState.faithTradition
+      );
       thinkingEl.remove();
-      this.addMessage("assistant", response.text);
-      this.updatePhaseIndicator(response.phase, response.step);
-      this.sessionId = response.session_id;
-      if (this.plugin.settings.enableAuthorMemory) {
-        await this.saveToVault(text, response);
+      const { signal, detail } = this.stateMachine.parseSignal(response.text);
+      const cleanText = this.stateMachine.stripSignal(response.text);
+      this.addMessage("assistant", cleanText);
+      this.sessionState.conversation.push({
+        role: "assistant",
+        content: cleanText,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+      this.stateMachine.processSignal(this.sessionState, signal, detail);
+      this.updatePhaseIndicator(this.sessionState.currentPhase, currentStep(this.sessionState));
+      await this.saveSession();
+      if (this.sessionState.completed) {
+        await this.onSessionComplete();
       }
     } catch (error) {
       const thinking = this.messagesEl.querySelector(".logography-thinking");
@@ -199,6 +900,63 @@ var LogographyView = class extends import_obsidian2.ItemView {
       this.addMessage("assistant", errorMsg);
     }
   }
+  async saveSession() {
+    if (!this.sessionState)
+      return;
+    try {
+      await this.plugin.vaultStorage.saveSession(this.sessionState);
+    } catch (err) {
+      console.error("Failed to save session to vault:", err);
+    }
+  }
+  async onSessionComplete() {
+    if (!this.sessionState)
+      return;
+    const summaryData = summarizeSession(this.sessionState);
+    this.sessionState.summary = summaryData.summary;
+    await this.saveSession();
+    const durationMinutes = Math.round((Date.now() - this.sessionStartTime) / 6e4);
+    const phasesCompleted = this.getPhasesCompleted();
+    const deflated = this.sessionState.beliefs.filter((b) => b.status === "deflated" || b.status === "partially_deflated").length;
+    this.plugin.server.sendMetrics({
+      user_id: this.sessionState.userId,
+      session_id: this.sessionState.sessionId,
+      metrics: {
+        turn_count: this.sessionState.turnCount,
+        duration_minutes: durationMinutes,
+        phases_completed: phasesCompleted,
+        beliefs_surfaced: this.sessionState.beliefs.length,
+        beliefs_deflated: deflated,
+        understanding_score: 0,
+        // Will be set by user UI later
+        entry_type: this.sessionState.entryType || "session",
+        completed: true
+      }
+    });
+  }
+  getPhasesCompleted() {
+    if (!this.sessionState)
+      return [];
+    const allPhases = ["terrain", "scenes", "diagram", "cross_exam", "integration"];
+    const currentIdx = allPhases.indexOf(this.sessionState.currentPhase);
+    return allPhases.slice(0, currentIdx + 1);
+  }
+  async startNewSession() {
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+    const existingSessions = await this.plugin.vaultStorage.listSessions();
+    const sessionNumber = existingSessions.length + 1;
+    this.sessionState = createSession(
+      this.plugin.settings.userId,
+      sessionNumber,
+      this.plugin.settings.faithTradition
+    );
+    this.sessionStartTime = Date.now();
+    this.messagesEl.empty();
+    this.updatePhaseIndicator(this.sessionState.currentPhase, currentStep(this.sessionState));
+    this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
+  }
   addMessage(role, text) {
     const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
     msgEl.textContent = text;
@@ -207,50 +965,24 @@ var LogographyView = class extends import_obsidian2.ItemView {
   }
   updatePhaseIndicator(phase, step) {
     const phaseNames = {
-      I: "Terrain",
-      II: "Scenes",
-      III: "Analysis",
-      IV: "Cross-Examination",
-      V: "Integration",
-      terrain: "Terrain",
-      scenes: "Scenes",
-      diagram: "Analysis",
-      cross_exam: "Cross-Examination",
-      integration: "Integration"
+      terrain: "I: Terrain",
+      scenes: "II: Scenes",
+      diagram: "III: Analysis",
+      cross_exam: "IV: Cross-Examination",
+      integration: "V: Integration"
     };
     const phaseName = phaseNames[phase] || phase;
     const stepName = step.replace(/_/g, " ");
-    this.phaseEl.textContent = `Phase ${phase}: ${phaseName} \u2014 ${stepName}`;
+    this.phaseEl.textContent = `${phaseName} \u2014 ${stepName}`;
   }
-  async saveToVault(userMessage, response) {
-    try {
-      const sessionFile = `Logography/Sessions/${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}-session.md`;
-      const existing = this.plugin.vaultStorage.getVault().getAbstractFileByPath(sessionFile);
-      const entry = `
-
-**You:** ${userMessage}
-
-**Guide:** ${response.text}
-`;
-      if (existing) {
-        await this.plugin.vaultStorage.getVault().process(existing, (data) => data + entry);
-      } else {
-        const header = `# Logography Session \u2014 ${(/* @__PURE__ */ new Date()).toLocaleDateString()}
-
-*Phase: ${response.phase} | Step: ${response.step}*
-`;
-        await this.plugin.vaultStorage.getVault().create(sessionFile, header + entry);
-      }
-    } catch (e) {
-    }
+  detectEntryType(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes("dream") || lower.includes("nightmare") || lower.includes("sleep"))
+      return "dream";
+    if (lower.includes("?") || lower.includes("how") || lower.includes("why") || lower.includes("what"))
+      return "question";
+    return "problem";
   }
-  startNewSession() {
-    this.sessionId = null;
-    this.messagesEl.empty();
-    this.updatePhaseIndicator("I", "opening");
-    this.addMessage("assistant", "What would you like to explore today? A dream, a problem, a question about yourself?");
-  }
-  // Sleepy UI: expose focus for Quick Capture command
   focusInput() {
     if (this.inputEl) {
       this.inputEl.focus();
@@ -286,6 +1018,52 @@ var LogographyServer = class {
     this.serverUrl = serverUrl.replace(/\/$/, "");
     this.apiKey = apiKey;
   }
+  updateUserId(userId) {
+    this.userId = userId;
+  }
+  // --- Core API ---
+  /**
+   * Send a message via the stateless vault endpoint.
+   * Plugin sends full context; server returns response + updated state.
+   */
+  async sendVaultMessage(message, sessionState, crossSessionContext, faithTradition) {
+    const request = {
+      message,
+      session_state: this.serializeState(sessionState),
+      cross_session_context: crossSessionContext,
+      faith_tradition: faithTradition,
+      session_id: sessionState.sessionId
+    };
+    return this.request("POST", "/api/chat/vault", request);
+  }
+  /**
+   * Push lightweight session metrics (no content).
+   */
+  async sendMetrics(payload) {
+    try {
+      await this.request("POST", "/api/metrics", payload);
+    } catch (e) {
+    }
+  }
+  // --- Auth ---
+  async login(email, password) {
+    return this.request("POST", "/api/auth/login", { email, password });
+  }
+  async signup(email, password) {
+    return this.request("POST", "/api/auth/signup", { email, password });
+  }
+  async verifyMfa(email, code, tempToken) {
+    return this.request("POST", "/api/auth/mfa/verify", {
+      email,
+      code,
+      temp_token: tempToken
+    });
+  }
+  // --- Health ---
+  async health() {
+    return this.request("GET", "/api/health");
+  }
+  // --- Internal ---
   async request(method, path, body) {
     const params = {
       url: `${this.serverUrl}${path}`,
@@ -317,41 +1095,47 @@ var LogographyServer = class {
     }
     return response.json;
   }
-  async sendMessage(message) {
-    return this.request("POST", "/api/chat", {
-      user_id: this.userId,
-      message
-    });
-  }
-  async newSession() {
-    return this.request("POST", "/api/session/new", {
-      user_id: this.userId
-    });
-  }
-  async getSessionStatus() {
-    return this.request("GET", `/api/session/${this.userId}`);
-  }
-  async listSessions() {
-    return this.request("GET", `/api/sessions/${this.userId}`);
-  }
-  async loadSession(sessionId) {
-    return this.request("POST", "/api/sessions/load", {
-      user_id: this.userId,
-      session_id: sessionId
-    });
-  }
-  async reviewSession() {
-    return this.request("POST", `/api/review/${this.userId}`);
-  }
-  async health() {
-    return this.request("GET", "/api/health");
+  /**
+   * Serialize SessionState for the API request.
+   * Converts camelCase to snake_case for the Python backend.
+   */
+  serializeState(state) {
+    return {
+      session_id: state.sessionId,
+      user_id: state.userId,
+      session_number: state.sessionNumber,
+      started_at: state.startedAt,
+      current_phase: state.currentPhase,
+      current_step: state.currentPhase,
+      // Will be computed by backend
+      turn_count: state.turnCount,
+      entry_type: state.entryType,
+      scenes: state.scenes.map((s) => ({
+        id: s.id,
+        description: s.description,
+        emotional_charge: s.emotionalCharge,
+        negative_state: s.negativeState,
+        selected: s.selected
+      })),
+      beliefs: state.beliefs.map((b) => ({
+        id: b.id,
+        statement: b.statement,
+        status: b.status,
+        origin_scene: b.originScene,
+        origin_traced: b.originTraced,
+        contradictions_tested: b.contradictionsTested,
+        deflation_level: b.deflationLevel
+      })),
+      current_belief_idx: state.currentBeliefIdx,
+      completed: state.completed
+    };
   }
 };
 
 // src/storage/VaultStorage.ts
 var import_obsidian4 = require("obsidian");
 var SESSIONS_FOLDER = "Logography/Sessions";
-var PATTERNS_FOLDER = "Logography/Patterns";
+var JOURNAL_FOLDER = "Logography/Journal";
 var VaultStorage = class {
   constructor(app) {
     this.vault = app.vault;
@@ -360,8 +1144,9 @@ var VaultStorage = class {
     return this.vault;
   }
   async ensureFolders() {
+    await this.ensureFolder("Logography");
     await this.ensureFolder(SESSIONS_FOLDER);
-    await this.ensureFolder(PATTERNS_FOLDER);
+    await this.ensureFolder(JOURNAL_FOLDER);
   }
   async ensureFolder(path) {
     const existing = this.vault.getAbstractFileByPath(path);
@@ -369,85 +1154,341 @@ var VaultStorage = class {
       await this.vault.createFolder(path);
     }
   }
-  // Save author memory summary to patterns folder
-  async saveAuthorMemory(summary) {
-    const filepath = `${PATTERNS_FOLDER}/author-memory.md`;
-    const content = `# Logography \u2014 Author Memory
-
-*Auto-generated cross-session pattern summary. Updated after each session.*
-
-${summary}
-
----
-*Last updated: ${(/* @__PURE__ */ new Date()).toISOString()}*
-`;
+  // --- Session I/O ---
+  /**
+   * Save session state + conversation to vault as markdown with YAML frontmatter.
+   * Creates or updates the session file.
+   */
+  async saveSession(state) {
+    const filepath = this.sessionFilePath(state);
+    const content = this.sessionToMarkdown(state);
     const existing = this.vault.getAbstractFileByPath(filepath);
     if (existing instanceof import_obsidian4.TFile) {
       await this.vault.modify(existing, content);
     } else {
+      const parts = filepath.split("/");
+      parts.pop();
+      await this.ensureFolder(parts.join("/"));
       await this.vault.create(filepath, content);
     }
   }
-  // Load existing author memory
-  async loadAuthorMemory() {
-    const filepath = `${PATTERNS_FOLDER}/author-memory.md`;
-    const file = this.vault.getAbstractFileByPath(filepath);
-    if (file instanceof import_obsidian4.TFile) {
-      const content = await this.vault.read(file);
-      const match = content.match(/\*Auto-generated.*?\*[\s\S]*?(?=\n\n---)/);
-      return match ? match[0].replace(/\*Auto-generated.*?\*\n\n/, "").trim() : "";
+  /**
+   * Load a session from vault by session ID.
+   * Scans the sessions folder for matching frontmatter.
+   */
+  async loadSession(sessionId) {
+    const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
+    if (!(folder instanceof import_obsidian4.TFolder))
+      return null;
+    for (const file of folder.children) {
+      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+        const content = await this.vault.read(file);
+        const frontmatter = this.parseFrontmatter(content);
+        if (frontmatter && frontmatter.session_id === sessionId) {
+          return this.parseSessionFile(content);
+        }
+      }
     }
-    return "";
+    return null;
+  }
+  /**
+   * Load the most recent incomplete session (for resume).
+   */
+  async loadLatestSession() {
+    const sessions = await this.listSessions();
+    const incomplete = sessions.filter((s) => !s.completed);
+    if (incomplete.length === 0)
+      return null;
+    return this.loadSession(incomplete[0].sessionId);
+  }
+  /**
+   * List all sessions from vault (sorted by date, newest first).
+   * Returns lightweight summaries — does NOT load full conversation.
+   */
+  async listSessions() {
+    const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
+    if (!(folder instanceof import_obsidian4.TFolder))
+      return [];
+    const sessions = [];
+    for (const file of folder.children) {
+      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+        const content = await this.vault.read(file);
+        const state = this.parseSessionFile(content);
+        if (state)
+          sessions.push(state);
+      }
+    }
+    sessions.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+    return sessions;
+  }
+  /**
+   * Append a single message exchange to the session file.
+   * More efficient than rewriting the whole file on every turn.
+   */
+  async appendToSession(state, userMsg, aiMsg) {
+    const filepath = this.sessionFilePath(state);
+    const existing = this.vault.getAbstractFileByPath(filepath);
+    if (existing instanceof import_obsidian4.TFile) {
+      await this.vault.process(existing, (data) => {
+        const entry = `
+
+**You:** ${userMsg}
+
+**Logography:** ${aiMsg}
+`;
+        return data + entry;
+      });
+    }
+  }
+  /**
+   * Delete a session file from vault.
+   */
+  async deleteSession(sessionId) {
+    const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
+    if (!(folder instanceof import_obsidian4.TFolder))
+      return false;
+    for (const file of folder.children) {
+      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+        const content = await this.vault.read(file);
+        const frontmatter = this.parseFrontmatter(content);
+        if (frontmatter && frontmatter.session_id === sessionId) {
+          await this.vault.delete(file);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  // --- Serialization ---
+  sessionFilePath(state) {
+    const date = state.startedAt.slice(0, 10);
+    return `${SESSIONS_FOLDER}/${date}-${state.sessionId}.md`;
+  }
+  sessionToMarkdown(state) {
+    const dict = stateToDict(state);
+    const frontmatter = this.dictToYaml(dict);
+    const conversation = this.conversationToMarkdown(state.conversation);
+    return `---
+${frontmatter}---
+
+# Logography Session \u2014 ${new Date(state.startedAt).toLocaleDateString()}
+
+${conversation}`;
+  }
+  conversationToMarkdown(messages) {
+    if (messages.length === 0)
+      return "*Session in progress...*\n";
+    return messages.map((m) => {
+      const label = m.role === "user" ? "You" : "Logography";
+      return `**${label}:** ${m.content}
+`;
+    }).join("\n");
+  }
+  /**
+   * Minimal YAML serializer for frontmatter.
+   * Handles strings, numbers, booleans, arrays of primitives, arrays of objects.
+   */
+  dictToYaml(dict, indent = 0) {
+    let yaml = "";
+    const pad = "  ".repeat(indent);
+    for (const [key, value] of Object.entries(dict)) {
+      if (value === void 0 || value === null)
+        continue;
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          yaml += `${pad}${key}: []
+`;
+        } else if (typeof value[0] === "object") {
+          yaml += `${pad}${key}:
+`;
+          for (const item of value) {
+            yaml += `${pad}  -
+`;
+            for (const [k, v] of Object.entries(item)) {
+              if (v === void 0 || v === null)
+                continue;
+              yaml += `${pad}    ${k}: ${this.yamlValue(v)}
+`;
+            }
+          }
+        } else {
+          yaml += `${pad}${key}:
+`;
+          for (const item of value) {
+            yaml += `${pad}  - ${this.yamlValue(item)}
+`;
+          }
+        }
+      } else if (typeof value === "object") {
+        yaml += `${pad}${key}:
+`;
+        for (const [k, v] of Object.entries(value)) {
+          if (v === void 0 || v === null)
+            continue;
+          yaml += `${pad}  ${k}: ${this.yamlValue(v)}
+`;
+        }
+      } else {
+        yaml += `${pad}${key}: ${this.yamlValue(value)}
+`;
+      }
+    }
+    return yaml;
+  }
+  yamlValue(value) {
+    if (typeof value === "string") {
+      if (value.includes(":") || value.includes("#") || value.includes('"') || value === "" || /^\d/.test(value)) {
+        return `"${value.replace(/"/g, '\\"')}"`;
+      }
+      return value;
+    }
+    return String(value);
+  }
+  // --- Frontmatter Parsing ---
+  /**
+   * Parse YAML frontmatter from a markdown file.
+   * Simple parser — handles the subset of YAML we generate.
+   */
+  parseFrontmatter(content) {
+    const match = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!match)
+      return null;
+    const yaml = match[1];
+    return this.parseYamlSimple(yaml);
+  }
+  /**
+   * Parse a session file into a SessionState object.
+   */
+  parseSessionFile(content) {
+    const frontmatter = this.parseFrontmatter(content);
+    if (!frontmatter || !frontmatter.session_id)
+      return null;
+    const state = dictToState(frontmatter);
+    const body = content.replace(/^---\n[\s\S]*?\n---\n*/, "");
+    state.conversation = this.parseConversation(body);
+    return state;
+  }
+  parseConversation(body) {
+    const messages = [];
+    const regex = /\*\*(You|Logography):\*\*\s*([\s\S]*?)(?=\n\*\*(?:You|Logography):\*\*|$)/g;
+    let match;
+    while ((match = regex.exec(body)) !== null) {
+      messages.push({
+        role: match[1] === "You" ? "user" : "assistant",
+        content: match[2].trim(),
+        timestamp: ""
+        // Not preserved in markdown format
+      });
+    }
+    return messages;
+  }
+  /**
+   * Minimal YAML parser for frontmatter.
+   * Handles: scalars, arrays of scalars, arrays of objects, nested objects.
+   */
+  parseYamlSimple(yaml) {
+    const result = {};
+    const lines = yaml.split("\n");
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const keyMatch = line.match(/^(\w+):\s*(.*)/);
+      if (!keyMatch) {
+        i++;
+        continue;
+      }
+      const key = keyMatch[1];
+      const val = keyMatch[2].trim();
+      if (val === "" || val === "[]") {
+        const nextLine = lines[i + 1];
+        if (nextLine && nextLine.trim().startsWith("-")) {
+          const arr = [];
+          i++;
+          while (i < lines.length && lines[i].trim().startsWith("-")) {
+            const itemLine = lines[i].trim().slice(2).trim();
+            if (itemLine === "" || itemLine.includes(":")) {
+              const obj = {};
+              i++;
+              while (i < lines.length && lines[i].startsWith("    ")) {
+                const propMatch = lines[i].trim().match(/^(\w+):\s*(.*)/);
+                if (propMatch) {
+                  obj[propMatch[1]] = this.parseYamlScalar(propMatch[2].trim());
+                }
+                i++;
+              }
+              arr.push(obj);
+            } else {
+              arr.push(this.parseYamlScalar(itemLine));
+              i++;
+            }
+          }
+          result[key] = arr;
+          continue;
+        } else if (nextLine && nextLine.startsWith("  ") && !nextLine.trim().startsWith("-")) {
+          const obj = {};
+          i++;
+          while (i < lines.length && lines[i].startsWith("  ") && !lines[i].trim().startsWith("-")) {
+            const propMatch = lines[i].trim().match(/^(\w+):\s*(.*)/);
+            if (propMatch) {
+              obj[propMatch[1]] = this.parseYamlScalar(propMatch[2].trim());
+            }
+            i++;
+          }
+          result[key] = obj;
+          continue;
+        } else {
+          result[key] = val === "[]" ? [] : "";
+          i++;
+          continue;
+        }
+      }
+      result[key] = this.parseYamlScalar(val);
+      i++;
+    }
+    return result;
+  }
+  parseYamlScalar(val) {
+    if (val === "" || val === "null")
+      return null;
+    if (val === "true")
+      return true;
+    if (val === "false")
+      return false;
+    if (/^-?\d+$/.test(val))
+      return parseInt(val, 10);
+    if (/^-?\d+\.\d+$/.test(val))
+      return parseFloat(val);
+    if (val.startsWith('"') && val.endsWith('"') || val.startsWith("'") && val.endsWith("'")) {
+      return val.slice(1, -1);
+    }
+    return val;
   }
 };
 
-// src/storage/AuthorMemory.ts
-var AuthorMemory = class {
-  constructor(storage) {
-    this.summary = "";
-    this.updateQueue = Promise.resolve();
-    this.storage = storage;
+// src/metrics/MetricsReporter.ts
+var MetricsReporter = class {
+  constructor(server) {
+    this.server = server;
   }
-  async load() {
-    this.summary = await this.storage.loadAuthorMemory();
-  }
-  getSummary() {
-    return this.summary;
-  }
-  // Queue an update to prevent race conditions
-  queueUpdate(newSummary) {
-    this.updateQueue = this.updateQueue.catch(() => {
-    }).then(async () => {
-      if (newSummary && newSummary !== this.summary) {
-        this.summary = newSummary;
-        await this.storage.saveAuthorMemory(newSummary);
+  /**
+   * Report session metrics. Silent — no errors thrown.
+   */
+  async reportSession(userId, sessionId, metrics) {
+    const payload = {
+      user_id: userId,
+      session_id: sessionId,
+      metrics: {
+        turn_count: metrics.turnCount,
+        duration_minutes: metrics.durationMinutes,
+        phases_completed: metrics.phasesCompleted,
+        beliefs_surfaced: metrics.beliefsSurfaced,
+        beliefs_deflated: metrics.beliefsDeflated,
+        understanding_score: metrics.understandingScore,
+        entry_type: metrics.entryType,
+        completed: metrics.completed
       }
-    });
-  }
-  // Build context string for prompt injection
-  getContextForPrompt(enabled, shared) {
-    if (!enabled) {
-      return "Cross-session memory: disabled by user settings.";
-    }
-    if (!shared) {
-      return "Cross-session memory: stored locally but not shared with AI.";
-    }
-    if (!this.summary.trim()) {
-      return "Cross-session memory: none yet (first session).";
-    }
-    return `Cross-session memory (patterns from previous sessions):
-${this.summary.trim()}`;
-  }
-  // Build the prompt instruction for updating memory
-  getUpdateInstruction() {
-    return `Based on this session, update the author memory summary. 
-Capture enduring patterns, recurring beliefs, progress made, and areas still under exploration. 
-Keep it under 200 words. Focus on what would be useful context for future sessions.
-
-Previous memory summary:
-${this.summary || "(none yet)"}
-
-Provide ONLY the updated summary text, no preamble.`;
+    };
+    await this.server.sendMetrics(payload);
   }
 };
 
@@ -465,11 +1506,8 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
       this.settings.userId
     );
     this.vaultStorage = new VaultStorage(this.app);
-    this.authorMemory = new AuthorMemory(this.vaultStorage);
     await this.vaultStorage.ensureFolders();
-    if (this.settings.enableAuthorMemory) {
-      await this.authorMemory.load();
-    }
+    this.metricsReporter = new MetricsReporter(this.server);
     this.registerView(VIEW_TYPE_LOGOGRAPHY, (leaf) => new LogographyView(leaf, this));
     this.addRibbonIcon("brain", "Open Logography", () => {
       this.activateView();
@@ -505,6 +1543,7 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
     await this.saveData(this.settings);
     if (this.server) {
       this.server.updateConfig(this.settings.serverUrl, this.settings.apiKey);
+      this.server.updateUserId(this.settings.userId);
     }
   }
   async activateView() {
@@ -516,7 +1555,6 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
     }
     workspace.revealLeaf(leaf);
   }
-  // Sleepy UI: open pane and focus input in one action
   async quickCapture() {
     await this.activateView();
     const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY);
