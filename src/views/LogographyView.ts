@@ -316,6 +316,29 @@ export class LogographyView extends ItemView {
     }
   }
 
+  async loadSession(session: SessionState): Promise<void> {
+    // Save current session if any
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+
+    // Load the passed session
+    this.sessionState = session;
+    this.sessionStartTime = Date.now();
+
+    // Clear and re-render
+    this.messagesEl.empty();
+    this.updatePhaseIndicator(session.currentPhase, currentStep(session));
+
+    for (const msg of session.conversation) {
+      this.addMessage(msg.role, msg.content);
+    }
+
+    if (session.conversation.length === 0) {
+      this.addMessage('assistant', 'This session is empty. What would you like to explore?');
+    }
+  }
+
   private detectCrisis(text: string): boolean {
     const crisisKeywords = [
       'kill myself', 'suicide', 'want to die', 'end my life',

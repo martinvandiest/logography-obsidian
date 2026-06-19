@@ -27,7 +27,7 @@ __export(main_exports, {
   default: () => LogographyPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian5 = require("obsidian");
+var import_obsidian6 = require("obsidian");
 
 // src/settings.ts
 var import_obsidian = require("obsidian");
@@ -1209,6 +1209,21 @@ var LogographyView = class extends import_obsidian2.ItemView {
       this.inputEl.focus();
     }
   }
+  async loadSession(session) {
+    if (this.sessionState && this.sessionState.conversation.length > 0) {
+      await this.saveSession();
+    }
+    this.sessionState = session;
+    this.sessionStartTime = Date.now();
+    this.messagesEl.empty();
+    this.updatePhaseIndicator(session.currentPhase, currentStep(session));
+    for (const msg of session.conversation) {
+      this.addMessage(msg.role, msg.content);
+    }
+    if (session.conversation.length === 0) {
+      this.addMessage("assistant", "This session is empty. What would you like to explore?");
+    }
+  }
   detectCrisis(text) {
     const crisisKeywords = [
       "kill myself",
@@ -1227,8 +1242,87 @@ var LogographyView = class extends import_obsidian2.ItemView {
   }
 };
 
-// src/server/LogographyServer.ts
+// src/views/SessionListView.ts
 var import_obsidian3 = require("obsidian");
+var VIEW_TYPE_SESSION_LIST = "logography-session-list";
+var SessionListView = class extends import_obsidian3.ItemView {
+  constructor(leaf, plugin) {
+    super(leaf);
+    this.plugin = plugin;
+  }
+  getViewType() {
+    return VIEW_TYPE_SESSION_LIST;
+  }
+  getDisplayText() {
+    return "Sessions";
+  }
+  getIcon() {
+    return "list";
+  }
+  async onOpen() {
+    const container = this.contentEl;
+    container.empty();
+    container.addClass("logography-session-list");
+    const header = container.createDiv("logography-session-list-header");
+    header.createEl("span", { text: "Sessions", cls: "logography-title" });
+    const refreshBtn = header.createEl("button", {
+      text: "\u21BB",
+      cls: "logography-new-session-btn",
+      attr: { title: "Refresh session list" }
+    });
+    refreshBtn.addEventListener("click", () => this.refresh());
+    this.listEl = container.createDiv("logography-sessions");
+    await this.refresh();
+  }
+  async refresh() {
+    var _a;
+    this.listEl.empty();
+    const sessions = await this.plugin.vaultStorage.listSessions();
+    if (sessions.length === 0) {
+      this.listEl.createDiv({ text: "No sessions yet", cls: "logography-session-date" });
+      return;
+    }
+    const sorted = [...sessions].sort(
+      (a, b) => (b.startedAt || "").localeCompare(a.startedAt || "")
+    );
+    for (const session of sorted) {
+      const item = this.listEl.createDiv("logography-session-item");
+      const dateStr = session.startedAt ? new Date(session.startedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }) : "Unknown date";
+      const phase = session.currentPhase || "?";
+      const turnCount = ((_a = session.conversation) == null ? void 0 : _a.length) || 0;
+      const completed = session.completed ? "\u2713" : "\u25CB";
+      const dateEl = item.createDiv("logography-session-date");
+      dateEl.textContent = `${completed} ${dateStr} \u2014 ${phase} (${turnCount} msgs)`;
+      if (session.summary) {
+        const summaryEl = item.createDiv("logography-session-summary");
+        summaryEl.textContent = session.summary.slice(0, 100) + (session.summary.length > 100 ? "..." : "");
+      }
+      item.addEventListener("click", async () => {
+        let chatLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
+        if (!chatLeaf) {
+          chatLeaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf();
+          await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
+        }
+        const chatView = chatLeaf.view;
+        await chatView.loadSession(session);
+        this.app.workspace.revealLeaf(chatLeaf);
+        this.listEl.querySelectorAll(".logography-session-item").forEach(
+          (el) => el.removeClass("active")
+        );
+        item.addClass("active");
+      });
+    }
+  }
+  async onClose() {
+  }
+};
+
+// src/server/LogographyServer.ts
+var import_obsidian4 = require("obsidian");
 var LogographyServer = class {
   constructor(serverUrl, apiKey, userId) {
     this.serverUrl = serverUrl.replace(/\/$/, "");
@@ -1304,7 +1398,7 @@ var LogographyServer = class {
     if (body) {
       params.body = JSON.stringify(body);
     }
-    const response = await (0, import_obsidian3.requestUrl)(params);
+    const response = await (0, import_obsidian4.requestUrl)(params);
     if (response.status === 401) {
       throw new Error("Invalid API key. Check your Logography settings.");
     }
@@ -1360,7 +1454,7 @@ var LogographyServer = class {
 };
 
 // src/storage/VaultStorage.ts
-var import_obsidian4 = require("obsidian");
+var import_obsidian5 = require("obsidian");
 var SESSIONS_FOLDER = "Logography/Sessions";
 var JOURNAL_FOLDER = "Logography/Journal";
 var VaultStorage = class {
@@ -1390,7 +1484,7 @@ var VaultStorage = class {
     const filepath = this.sessionFilePath(state);
     const content = this.sessionToMarkdown(state);
     const existing = this.vault.getAbstractFileByPath(filepath);
-    if (existing instanceof import_obsidian4.TFile) {
+    if (existing instanceof import_obsidian5.TFile) {
       await this.vault.modify(existing, content);
     } else {
       const parts = filepath.split("/");
@@ -1405,10 +1499,10 @@ var VaultStorage = class {
    */
   async loadSession(sessionId) {
     const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
-    if (!(folder instanceof import_obsidian4.TFolder))
+    if (!(folder instanceof import_obsidian5.TFolder))
       return null;
     for (const file of folder.children) {
-      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
         const content = await this.vault.read(file);
         const frontmatter = this.parseFrontmatter(content);
         if (frontmatter && frontmatter.session_id === sessionId) {
@@ -1434,11 +1528,11 @@ var VaultStorage = class {
    */
   async listSessions() {
     const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
-    if (!(folder instanceof import_obsidian4.TFolder))
+    if (!(folder instanceof import_obsidian5.TFolder))
       return [];
     const sessions = [];
     for (const file of folder.children) {
-      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
         const content = await this.vault.read(file);
         const state = this.parseSessionFile(content);
         if (state)
@@ -1455,7 +1549,7 @@ var VaultStorage = class {
   async appendToSession(state, userMsg, aiMsg) {
     const filepath = this.sessionFilePath(state);
     const existing = this.vault.getAbstractFileByPath(filepath);
-    if (existing instanceof import_obsidian4.TFile) {
+    if (existing instanceof import_obsidian5.TFile) {
       await this.vault.process(existing, (data) => {
         const entry = `
 
@@ -1472,10 +1566,10 @@ var VaultStorage = class {
    */
   async deleteSession(sessionId) {
     const folder = this.vault.getAbstractFileByPath(SESSIONS_FOLDER);
-    if (!(folder instanceof import_obsidian4.TFolder))
+    if (!(folder instanceof import_obsidian5.TFolder))
       return false;
     for (const file of folder.children) {
-      if (file instanceof import_obsidian4.TFile && file.extension === "md") {
+      if (file instanceof import_obsidian5.TFile && file.extension === "md") {
         const content = await this.vault.read(file);
         const frontmatter = this.parseFrontmatter(content);
         if (frontmatter && frontmatter.session_id === sessionId) {
@@ -1720,7 +1814,11 @@ var MetricsReporter = class {
 };
 
 // src/main.ts
-var LogographyPlugin = class extends import_obsidian5.Plugin {
+var LogographyPlugin = class extends import_obsidian6.Plugin {
+  constructor() {
+    super(...arguments);
+    this.sessionListView = null;
+  }
   async onload() {
     await this.loadSettings();
     if (!this.settings.userId) {
@@ -1736,6 +1834,11 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
     await this.vaultStorage.ensureFolders();
     this.metricsReporter = new MetricsReporter(this.server);
     this.registerView(VIEW_TYPE_LOGOGRAPHY, (leaf) => new LogographyView(leaf, this));
+    this.registerView(VIEW_TYPE_SESSION_LIST, (leaf) => {
+      const view = new SessionListView(leaf, this);
+      this.sessionListView = view;
+      return view;
+    });
     this.addRibbonIcon("brain", "Open Logography", () => {
       this.activateView();
     });
@@ -1751,6 +1854,11 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
         this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach((leaf) => leaf.detach());
         this.activateView();
       }
+    });
+    this.addCommand({
+      id: "open-session-list",
+      name: "Logography: Open Session List",
+      callback: () => this.activateSessionList()
     });
     this.addCommand({
       id: "quick-capture",
@@ -1775,12 +1883,31 @@ var LogographyPlugin = class extends import_obsidian5.Plugin {
   }
   async activateView() {
     const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
-    if (!leaf) {
-      leaf = workspace.getRightLeaf(false) || workspace.getLeaf();
-      await leaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
+    let chatLeaf = workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
+    if (!chatLeaf) {
+      chatLeaf = workspace.getRightLeaf(false) || workspace.getLeaf();
+      await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
     }
-    workspace.revealLeaf(leaf);
+    workspace.revealLeaf(chatLeaf);
+    await this.activateSessionList();
+  }
+  async activateSessionList() {
+    const { workspace } = this.app;
+    let listLeaf = workspace.getLeavesOfType(VIEW_TYPE_SESSION_LIST)[0];
+    if (!listLeaf) {
+      const chatLeaf = workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
+      if (chatLeaf) {
+        listLeaf = workspace.createLeafBySplit(chatLeaf, "vertical", false);
+      } else {
+        listLeaf = workspace.getRightLeaf(false) || workspace.getLeaf();
+      }
+      await listLeaf.setViewState({ type: VIEW_TYPE_SESSION_LIST, active: false });
+    }
+  }
+  refreshSessionList() {
+    if (this.sessionListView) {
+      this.sessionListView.refresh();
+    }
   }
   async quickCapture() {
     await this.activateView();
