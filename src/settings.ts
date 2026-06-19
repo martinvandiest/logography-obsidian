@@ -289,6 +289,9 @@ export class LogographySettingTab extends PluginSettingTab {
           const sessionId = summary.session_id;
           const filepath = `Logography/Sessions/${date}-${sessionId}.md`;
 
+          // Mark as completed if substantial (historical data)
+          const isCompleted = summary.completed || (detail.conversation && detail.conversation.length >= 4);
+
           // Build frontmatter
           const frontmatter = [
             '---',
@@ -297,7 +300,7 @@ export class LogographySettingTab extends PluginSettingTab {
             `current_phase: "${summary.phase || 'terrain'}"`,
             `current_step: "${summary.phase || 'terrain'}"`,
             `turn_count: ${summary.message_count || 0}`,
-            `completed: ${summary.completed}`,
+            `completed: ${isCompleted}`,
             `entry_type: "migrated"`,
             `scenes: []`,
             `beliefs: []`,

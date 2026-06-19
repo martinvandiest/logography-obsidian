@@ -233,6 +233,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
           const date = summary.created_at ? summary.created_at.slice(0, 10) : (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
           const sessionId = summary.session_id;
           const filepath = `Logography/Sessions/${date}-${sessionId}.md`;
+          const isCompleted = summary.completed || detail.conversation && detail.conversation.length >= 4;
           const frontmatter = [
             "---",
             `session_id: "${sessionId}"`,
@@ -240,7 +241,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
             `current_phase: "${summary.phase || "terrain"}"`,
             `current_step: "${summary.phase || "terrain"}"`,
             `turn_count: ${summary.message_count || 0}`,
-            `completed: ${summary.completed}`,
+            `completed: ${isCompleted}`,
             `entry_type: "migrated"`,
             `scenes: []`,
             `beliefs: []`,
@@ -554,7 +555,9 @@ var CrossSessionMemory = class {
    */
   async buildContext(currentSessionId) {
     const allSessions = await this.storage.listSessions();
-    const previousSessions = allSessions.filter((s) => s.sessionId !== currentSessionId && s.completed);
+    const previousSessions = allSessions.filter(
+      (s) => s.sessionId !== currentSessionId && (s.completed || s.conversation.length >= 4)
+    );
     if (previousSessions.length === 0) {
       return {
         recentSessions: [],
@@ -664,7 +667,7 @@ Guide: ${ex.ai}
         }
       }
     }
-    return [...new Set(themes)].slice(0, 5);
+    return Array.from(new Set(themes)).slice(0, 5);
   }
   extractExchanges(session) {
     const exchanges = [];

@@ -46,8 +46,10 @@ export class CrossSessionMemory {
   async buildContext(currentSessionId?: string): Promise<CrossSessionContext> {
     const allSessions = await this.storage.listSessions();
 
-    // Exclude current session
-    const previousSessions = allSessions.filter(s => s.sessionId !== currentSessionId && s.completed);
+    // Exclude current session, include completed or substantial sessions
+    const previousSessions = allSessions.filter(s =>
+      s.sessionId !== currentSessionId && (s.completed || s.conversation.length >= 4)
+    );
 
     if (previousSessions.length === 0) {
       return {
@@ -183,7 +185,7 @@ export class CrossSessionMemory {
     }
 
     // Deduplicate
-    return [...new Set(themes)].slice(0, 5);
+    return Array.from(new Set(themes)).slice(0, 5);
   }
 
   private extractExchanges(session: SessionState): ExchangePair[] {
