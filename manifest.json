@@ -3,7 +3,7 @@
   "name": "Logography",
   "version": "0.3.0",
   "description": "Analyze dreams and explore personal beliefs through guided Socratic dialogue. Sessions stay in your vault as Markdown.",
-  "author": "protostate",
+  "author": "vanmartin",
   "minAppVersion": "1.0.0",
   "isDesktopOnly": false
 }
