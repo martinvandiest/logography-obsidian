@@ -150,6 +150,29 @@ export class LogographyServer {
     return this.request('GET', `/api/sessions/${this.userId}/${sessionId}/messages`);
   }
 
+  // --- Session Sync (opt-in push to server) ---
+
+  /**
+   * Push full session content to server for cross-device sync.
+   * Fire-and-forget — failures are silent.
+   */
+  async syncSession(sessionState: SessionState, summary?: string): Promise<void> {
+    try {
+      await this.request('PUT', '/api/sessions/vault', {
+        user_id: this.userId,
+        session_id: sessionState.sessionId,
+        session_state: this.serializeState(sessionState),
+        conversation: sessionState.conversation,
+        completed: sessionState.completed,
+        summary: summary || '',
+        started_at: sessionState.startedAt,
+        faith_tradition: sessionState.faithTradition || '',
+      });
+    } catch {
+      // Silent — sync failures don't disrupt the user
+    }
+  }
+
   // --- Internal ---
 
   private async request(method: string, path: string, body?: unknown): Promise<any> {

@@ -17,29 +17,43 @@ Sessions are saved as Markdown files in your vault with YAML frontmatter — ful
 ## Features
 
 - **Guided dialogue** — Not a chatbot. A structured method with phase transitions.
-- **Cross-session memory** — The AI remembers your previous sessions (from your vault, not a server).
+- **Cross-session memory** — The AI remembers your previous sessions from your vault.
 - **Faith traditions** — Optional. Select a faith lens (Christian, Buddhist, Islamic, Jewish, secular, and more) to frame the dialogue.
 - **Recovery mode** — Optional. 12-step sponsor voice for recovery-focused work.
 - **Crisis detection** — Automatic handoff to 988 Suicide & Crisis Lifeline if crisis language is detected.
-- **Data sovereignty** — Your vault is the database. The server does inference only and stores nothing.
+- **Data sovereignty** — Your vault is the database. By default, the server does inference only and stores nothing.
 
 ## Network and account requirements
 
 This plugin requires a network connection and a Logography account:
 
-- **Account required:** A free Logography account is needed to use the AI features. Sign up at [logographyapp.com](https://logographyapp.com).
-- **Network use:** The plugin connects to `logographyapp.com` to send your message and session context for AI inference. The server returns a response and stores nothing — all session data stays in your vault.
+- **Account required:** A Logography account is needed to use the AI features. Sign up at [logographyapp.com](https://logographyapp.com).
+- **Network use:** The plugin connects to `logographyapp.com` to send your message and session context for AI inference. The server returns a response and stores nothing by default.
 - **No telemetry:** The plugin does not include client-side telemetry, analytics, or tracking.
 - **No self-update:** The plugin does not include a self-update mechanism.
 
-## How it works
+## Optional session sync
 
-The plugin sends your message and session context to a server for AI inference, then saves the response locally. Your vault holds everything — the server is stateless.
+By default, sessions are stored only in your vault. If you enable **Sync sessions to server** in plugin settings, the plugin will push a copy of each session to the server after every save. This allows:
+
+- **Cross-device access** — Import your sessions on any device using the Import button.
+- **Backup** — Sessions are retained on the server according to your account's retention policy (default: never auto-delete).
+
+When sync is enabled:
+- Full session content (conversation, beliefs, scenes, phase) is stored encrypted on the server.
+- Your vault remains the source of truth — the server holds a copy.
+- Synced sessions can be imported on other devices via Settings → Import.
+- You can disable sync at any time. Existing synced sessions remain on the server until you delete them or your retention policy expires.
+
+When sync is disabled (default):
+- The server receives your message for inference only. No session content is stored.
+- Sessions exist only in your local vault.
 
 ## Privacy
 
-- Sessions are stored only in your vault as local Markdown files.
+- Sessions are stored only in your vault as local Markdown files by default.
 - Cross-session memory reads from your vault files — nothing is stored server-side.
+- If sync is enabled, a copy of each session is stored on the server for cross-device access.
 - No analytics, no tracking, no training on your data.
 
 ## Getting started
@@ -57,7 +71,7 @@ The plugin sends your message and session context to a server for AI inference, 
 
 ## Support
 
-- [GitHub Issues](https://github.com/martinvandiest/logography-obsidian/issues)
+- [GitHub Issues](https://github.com/logography-app/logography-obsidian/issues)
 
 ## License
 

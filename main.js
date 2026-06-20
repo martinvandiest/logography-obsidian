@@ -66,6 +66,7 @@ var DEFAULT_SETTINGS = {
   userName: "",
   faithTradition: "",
   recoveryMode: false,
+  syncEnabled: false,
   model: "anthropic/claude-sonnet-4"
 };
 var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
@@ -113,6 +114,13 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       new import_obsidian.Setting(containerEl).setName("Recovery support").setDesc("12-step recovery framework (stacks with faith tradition)").addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.recoveryMode).onChange(async (value) => {
           this.plugin.settings.recoveryMode = value;
+          await this.plugin.saveSettings();
+        })
+      );
+      containerEl.createEl("h3", { text: "Sync" });
+      new import_obsidian.Setting(containerEl).setName("Sync sessions to server").setDesc("Store session content on the server for cross-device access. Your vault remains the source of truth \u2014 this pushes a copy to the server. Sessions are retained according to your account retention policy. Requires login.").addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.syncEnabled).onChange(async (value) => {
+          this.plugin.settings.syncEnabled = value;
           await this.plugin.saveSettings();
         })
       );
@@ -1129,6 +1137,9 @@ var LogographyView = class extends import_obsidian2.ItemView {
     } catch (err) {
       console.error("Failed to save session to vault:", err);
     }
+    if (this.plugin.settings.syncEnabled && this.plugin.settings.apiKey) {
+      this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
+    }
   }
   async onSessionComplete() {
     if (!this.sessionState)
@@ -1383,6 +1394,26 @@ var LogographyServer = class {
   }
   async getServerSessionMessages(sessionId) {
     return this.request("GET", `/api/sessions/${this.userId}/${sessionId}/messages`);
+  }
+  // --- Session Sync (opt-in push to server) ---
+  /**
+   * Push full session content to server for cross-device sync.
+   * Fire-and-forget — failures are silent.
+   */
+  async syncSession(sessionState, summary) {
+    try {
+      await this.request("PUT", "/api/sessions/vault", {
+        user_id: this.userId,
+        session_id: sessionState.sessionId,
+        session_state: this.serializeState(sessionState),
+        conversation: sessionState.conversation,
+        completed: sessionState.completed,
+        summary: summary || "",
+        started_at: sessionState.startedAt,
+        faith_tradition: sessionState.faithTradition || ""
+      });
+    } catch (e) {
+    }
   }
   // --- Internal ---
   async request(method, path, body) {

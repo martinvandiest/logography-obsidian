@@ -217,6 +217,11 @@ export class LogographyView extends ItemView {
     } catch (err) {
       console.error('Failed to save session to vault:', err);
     }
+
+    // Sync to server if enabled
+    if (this.plugin.settings.syncEnabled && this.plugin.settings.apiKey) {
+      this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
+    }
   }
 
   private async onSessionComplete(): Promise<void> {

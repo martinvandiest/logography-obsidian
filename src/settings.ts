@@ -17,6 +17,9 @@ export interface LogographySettings {
   faithTradition: string;
   recoveryMode: boolean;
 
+  // Sync
+  syncEnabled: boolean;
+
   // Model
   model: string;
 }
@@ -58,6 +61,7 @@ export const DEFAULT_SETTINGS: LogographySettings = {
   userName: '',
   faithTradition: '',
   recoveryMode: false,
+  syncEnabled: false,
   model: 'anthropic/claude-sonnet-4',
 };
 
@@ -131,6 +135,19 @@ export class LogographySettingTab extends PluginSettingTab {
         .addToggle((toggle) =>
           toggle.setValue(this.plugin.settings.recoveryMode).onChange(async (value) => {
             this.plugin.settings.recoveryMode = value;
+            await this.plugin.saveSettings();
+          })
+        );
+
+      // --- Sync ---
+      containerEl.createEl('h3', { text: 'Sync' });
+
+      new Setting(containerEl)
+        .setName('Sync sessions to server')
+        .setDesc('Store session content on the server for cross-device access. Your vault remains the source of truth — this pushes a copy to the server. Sessions are retained according to your account retention policy. Requires login.')
+        .addToggle((toggle) =>
+          toggle.setValue(this.plugin.settings.syncEnabled).onChange(async (value) => {
+            this.plugin.settings.syncEnabled = value;
             await this.plugin.saveSettings();
           })
         );
