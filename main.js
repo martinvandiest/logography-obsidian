@@ -53,7 +53,8 @@ var FAITH_TRADITIONS = [
   { value: "syncretic", label: "Syncretic / Multiple traditions" }
 ];
 var MODELS = [
-  { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet (default)" },
+  { value: "anthropic/claude-opus-4", label: "Claude Opus (default)" },
+  { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet" },
   { value: "anthropic/claude-haiku", label: "Claude Haiku (faster)" },
   { value: "openai/gpt-4o", label: "GPT-4o" }
 ];
@@ -67,7 +68,7 @@ var DEFAULT_SETTINGS = {
   faithTradition: "",
   recoveryMode: false,
   syncEnabled: false,
-  model: "anthropic/claude-sonnet-4"
+  model: "anthropic/claude-opus-4"
 };
 var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {

@@ -47,7 +47,8 @@ export const FAITH_TRADITIONS = [
 ];
 
 export const MODELS = [
-  { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet (default)' },
+  { value: 'anthropic/claude-opus-4', label: 'Claude Opus (default)' },
+  { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet' },
   { value: 'anthropic/claude-haiku', label: 'Claude Haiku (faster)' },
   { value: 'openai/gpt-4o', label: 'GPT-4o' },
 ];
@@ -62,7 +63,7 @@ export const DEFAULT_SETTINGS: LogographySettings = {
   faithTradition: '',
   recoveryMode: false,
   syncEnabled: false,
-  model: 'anthropic/claude-sonnet-4',
+  model: 'anthropic/claude-opus-4',
 };
 
 export class LogographySettingTab extends PluginSettingTab {
