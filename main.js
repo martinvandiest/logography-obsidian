@@ -79,6 +79,11 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     this.mfaCode = "";
     this.showMfa = false;
     this.statusEl = null;
+    this.showSupportForm = false;
+    this.supportSubject = "";
+    this.supportCategory = "general";
+    this.supportSeverity = "medium";
+    this.supportDescription = "";
     this.plugin = plugin;
   }
   display() {
@@ -212,6 +217,17 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       btn.setButtonText("Import");
       btn.onClick(() => this.handleImport());
     });
+    const supportSetting = new import_obsidian.Setting(infoDiv).setName("Contact Support").setDesc("Reach out to our support team for help.");
+    supportSetting.addButton((btn) => {
+      btn.setButtonText(this.showSupportForm ? "Cancel" : "Contact Support");
+      btn.onClick(() => {
+        this.showSupportForm = !this.showSupportForm;
+        this.display();
+      });
+    });
+    if (this.showSupportForm) {
+      this.renderSupportForm(infoDiv);
+    }
     const logoutBtn = infoDiv.createEl("button", { text: "Sign out" });
     logoutBtn.style.marginTop = "12px";
     logoutBtn.addEventListener("click", async () => {
@@ -224,6 +240,83 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       new import_obsidian.Notice("Signed out");
       this.display();
     });
+  }
+  renderSupportForm(containerEl) {
+    const formDiv = containerEl.createDiv("logography-support-form");
+    formDiv.style.marginTop = "8px";
+    formDiv.style.padding = "12px";
+    formDiv.style.border = "1px solid var(--background-modifier-border)";
+    formDiv.style.borderRadius = "6px";
+    new import_obsidian.Setting(formDiv).setName("Subject").addText((text) => {
+      text.setPlaceholder("Brief summary of your issue").setValue(this.supportSubject).onChange((value) => {
+        this.supportSubject = value;
+      });
+    });
+    new import_obsidian.Setting(formDiv).setName("Category").addDropdown((dropdown) => {
+      dropdown.addOption("general", "General");
+      dropdown.addOption("account", "Account");
+      dropdown.addOption("billing", "Billing");
+      dropdown.addOption("technical", "Technical");
+      dropdown.addOption("feedback", "Feedback");
+      dropdown.setValue(this.supportCategory);
+      dropdown.onChange((value) => {
+        this.supportCategory = value;
+      });
+    });
+    new import_obsidian.Setting(formDiv).setName("Severity").addDropdown((dropdown) => {
+      dropdown.addOption("low", "Low");
+      dropdown.addOption("medium", "Medium");
+      dropdown.addOption("high", "High");
+      dropdown.addOption("urgent", "Urgent");
+      dropdown.setValue(this.supportSeverity);
+      dropdown.onChange((value) => {
+        this.supportSeverity = value;
+      });
+    });
+    const descSetting = new import_obsidian.Setting(formDiv).setName("Description");
+    const textarea = descSetting.settingEl.createEl("textarea");
+    textarea.placeholder = "Describe your issue in detail...";
+    textarea.value = this.supportDescription;
+    textarea.style.width = "100%";
+    textarea.style.minHeight = "80px";
+    textarea.style.marginTop = "4px";
+    textarea.addEventListener("input", () => {
+      this.supportDescription = textarea.value;
+    });
+    const submitBtn = formDiv.createEl("button", {
+      text: "Submit Ticket",
+      cls: "mod-cta"
+    });
+    submitBtn.style.marginTop = "8px";
+    submitBtn.addEventListener("click", () => this.handleSubmitTicket());
+  }
+  async handleSubmitTicket() {
+    if (!this.supportSubject.trim()) {
+      new import_obsidian.Notice("Please enter a subject.");
+      return;
+    }
+    if (!this.supportDescription.trim()) {
+      new import_obsidian.Notice("Please describe your issue.");
+      return;
+    }
+    try {
+      await this.plugin.server.createTicket(
+        this.supportSubject.trim(),
+        this.supportCategory,
+        this.supportSeverity,
+        this.supportDescription.trim()
+      );
+      new import_obsidian.Notice("Support ticket submitted successfully!");
+      this.showSupportForm = false;
+      this.supportSubject = "";
+      this.supportCategory = "general";
+      this.supportSeverity = "medium";
+      this.supportDescription = "";
+      this.display();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to submit ticket";
+      new import_obsidian.Notice(`Ticket submission failed: ${msg}`);
+    }
   }
   async handleImport() {
     new import_obsidian.Notice("Importing sessions from server...");
@@ -1428,6 +1521,26 @@ var LogographyServer = class {
       });
     } catch (e) {
     }
+  }
+  // --- Support Tickets ---
+  async createTicket(subject, category, severity, description) {
+    return this.request("POST", "/api/support/tickets", {
+      subject,
+      category,
+      severity,
+      description
+    });
+  }
+  async listMyTickets() {
+    return this.request("GET", "/api/support/tickets/my");
+  }
+  async getMyTicketDetail(ticketId) {
+    return this.request("GET", `/api/support/tickets/my/${ticketId}`);
+  }
+  async replyToTicket(ticketId, message) {
+    await this.request("POST", `/api/support/tickets/my/${ticketId}/reply`, {
+      message
+    });
   }
   // --- Internal ---
   async request(method, path, body) {

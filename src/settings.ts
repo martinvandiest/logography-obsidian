@@ -74,6 +74,11 @@ export class LogographySettingTab extends PluginSettingTab {
   private mfaCode = '';
   private showMfa = false;
   private statusEl: HTMLElement | null = null;
+  private showSupportForm = false;
+  private supportSubject = '';
+  private supportCategory = 'general';
+  private supportSeverity = 'medium';
+  private supportDescription = '';
 
   constructor(app: App, plugin: LogographyPlugin) {
     super(app, plugin);
@@ -268,6 +273,22 @@ export class LogographySettingTab extends PluginSettingTab {
       btn.onClick(() => this.handleImport());
     });
 
+    // Contact Support
+    const supportSetting = new Setting(infoDiv)
+      .setName('Contact Support')
+      .setDesc('Reach out to our support team for help.');
+    supportSetting.addButton((btn) => {
+      btn.setButtonText(this.showSupportForm ? 'Cancel' : 'Contact Support');
+      btn.onClick(() => {
+        this.showSupportForm = !this.showSupportForm;
+        this.display();
+      });
+    });
+
+    if (this.showSupportForm) {
+      this.renderSupportForm(infoDiv);
+    }
+
     const logoutBtn = infoDiv.createEl('button', { text: 'Sign out' });
     logoutBtn.style.marginTop = '12px';
     logoutBtn.addEventListener('click', async () => {
@@ -280,6 +301,94 @@ export class LogographySettingTab extends PluginSettingTab {
       new Notice('Signed out');
       this.display();
     });
+  }
+
+  private renderSupportForm(containerEl: HTMLElement): void {
+    const formDiv = containerEl.createDiv('logography-support-form');
+    formDiv.style.marginTop = '8px';
+    formDiv.style.padding = '12px';
+    formDiv.style.border = '1px solid var(--background-modifier-border)';
+    formDiv.style.borderRadius = '6px';
+
+    new Setting(formDiv)
+      .setName('Subject')
+      .addText((text) => {
+        text
+          .setPlaceholder('Brief summary of your issue')
+          .setValue(this.supportSubject)
+          .onChange((value) => { this.supportSubject = value; });
+      });
+
+    new Setting(formDiv)
+      .setName('Category')
+      .addDropdown((dropdown) => {
+        dropdown.addOption('general', 'General');
+        dropdown.addOption('account', 'Account');
+        dropdown.addOption('billing', 'Billing');
+        dropdown.addOption('technical', 'Technical');
+        dropdown.addOption('feedback', 'Feedback');
+        dropdown.setValue(this.supportCategory);
+        dropdown.onChange((value) => { this.supportCategory = value; });
+      });
+
+    new Setting(formDiv)
+      .setName('Severity')
+      .addDropdown((dropdown) => {
+        dropdown.addOption('low', 'Low');
+        dropdown.addOption('medium', 'Medium');
+        dropdown.addOption('high', 'High');
+        dropdown.addOption('urgent', 'Urgent');
+        dropdown.setValue(this.supportSeverity);
+        dropdown.onChange((value) => { this.supportSeverity = value; });
+      });
+
+    const descSetting = new Setting(formDiv).setName('Description');
+    const textarea = descSetting.settingEl.createEl('textarea');
+    textarea.placeholder = 'Describe your issue in detail...';
+    textarea.value = this.supportDescription;
+    textarea.style.width = '100%';
+    textarea.style.minHeight = '80px';
+    textarea.style.marginTop = '4px';
+    textarea.addEventListener('input', () => {
+      this.supportDescription = textarea.value;
+    });
+
+    const submitBtn = formDiv.createEl('button', {
+      text: 'Submit Ticket',
+      cls: 'mod-cta',
+    });
+    submitBtn.style.marginTop = '8px';
+    submitBtn.addEventListener('click', () => this.handleSubmitTicket());
+  }
+
+  private async handleSubmitTicket(): Promise<void> {
+    if (!this.supportSubject.trim()) {
+      new Notice('Please enter a subject.');
+      return;
+    }
+    if (!this.supportDescription.trim()) {
+      new Notice('Please describe your issue.');
+      return;
+    }
+
+    try {
+      await this.plugin.server.createTicket(
+        this.supportSubject.trim(),
+        this.supportCategory,
+        this.supportSeverity,
+        this.supportDescription.trim()
+      );
+      new Notice('Support ticket submitted successfully!');
+      this.showSupportForm = false;
+      this.supportSubject = '';
+      this.supportCategory = 'general';
+      this.supportSeverity = 'medium';
+      this.supportDescription = '';
+      this.display();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to submit ticket';
+      new Notice(`Ticket submission failed: ${msg}`);
+    }
   }
 
   private async handleImport(): Promise<void> {

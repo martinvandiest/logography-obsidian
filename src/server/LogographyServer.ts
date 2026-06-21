@@ -63,6 +63,30 @@ export interface ServerSessionDetail {
   phase: string;
 }
 
+export interface SupportTicket {
+  ticket_id: string;
+  subject: string;
+  category: string;
+  severity: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  last_message_at?: string;
+  message_count: number;
+}
+
+export interface SupportTicketMessage {
+  message_id: string;
+  sender: string;
+  message: string;
+  created_at: string;
+}
+
+export interface SupportTicketDetail extends SupportTicket {
+  description: string;
+  messages: SupportTicketMessage[];
+}
+
 export class LogographyServer {
   private serverUrl: string;
   private apiKey: string;
@@ -172,6 +196,36 @@ export class LogographyServer {
     } catch {
       // Silent — sync failures don't disrupt the user
     }
+  }
+
+  // --- Support Tickets ---
+
+  async createTicket(
+    subject: string,
+    category: string,
+    severity: string,
+    description: string
+  ): Promise<SupportTicket> {
+    return this.request('POST', '/api/support/tickets', {
+      subject,
+      category,
+      severity,
+      description,
+    });
+  }
+
+  async listMyTickets(): Promise<SupportTicket[]> {
+    return this.request('GET', '/api/support/tickets/my');
+  }
+
+  async getMyTicketDetail(ticketId: string): Promise<SupportTicketDetail> {
+    return this.request('GET', `/api/support/tickets/my/${ticketId}`);
+  }
+
+  async replyToTicket(ticketId: string, message: string): Promise<void> {
+    await this.request('POST', `/api/support/tickets/my/${ticketId}/reply`, {
+      message,
+    });
   }
 
   // --- Internal ---
