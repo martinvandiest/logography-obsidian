@@ -29,8 +29,16 @@ export default class LogographyPlugin extends Plugin {
     this.server = new LogographyServer(
       this.settings.serverUrl,
       this.settings.apiKey,
-      this.settings.userId
+      this.settings.userId,
+      this.settings.refreshToken || ''
     );
+
+    // Persist tokens when silently refreshed
+    this.server.onTokensUpdated = async (token: string, refreshToken: string) => {
+      this.settings.apiKey = token;
+      this.settings.refreshToken = refreshToken;
+      await this.saveSettings();
+    };
 
     // Initialize vault storage
     this.vaultStorage = new VaultStorage(this.app);

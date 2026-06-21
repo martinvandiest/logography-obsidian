@@ -61,6 +61,7 @@ var MODELS = [
 var DEFAULT_SETTINGS = {
   serverUrl: "https://logographyapp.com",
   apiKey: "",
+  refreshToken: "",
   userId: "",
   userEmail: "",
   userDisplayName: "",
@@ -443,10 +444,11 @@ ${conversation}
       return;
     }
     this.plugin.settings.apiKey = response.token;
+    this.plugin.settings.refreshToken = response.refresh_token || "";
     this.plugin.settings.userId = response.user_id;
     this.plugin.settings.userEmail = response.email;
     this.plugin.settings.userDisplayName = response.display_name || "";
-    this.plugin.server.updateConfig(this.plugin.settings.serverUrl, response.token);
+    this.plugin.server.updateConfig(this.plugin.settings.serverUrl, response.token, response.refresh_token);
     this.plugin.server.updateUserId(response.user_id);
     await this.plugin.saveSettings();
     this.showMfa = false;
@@ -1441,18 +1443,24 @@ var SessionListView = class extends import_obsidian3.ItemView {
 // src/server/LogographyServer.ts
 var import_obsidian4 = require("obsidian");
 var LogographyServer = class {
-  constructor(serverUrl, apiKey, userId) {
-    this.onAuthExpired = null;
+  constructor(serverUrl, apiKey, userId, refreshToken = "") {
+    this.onTokensUpdated = null;
     this.serverUrl = serverUrl.replace(/\/$/, "");
     this.apiKey = apiKey;
     this.userId = userId;
+    this.refreshToken = refreshToken;
   }
-  updateConfig(serverUrl, apiKey) {
+  updateConfig(serverUrl, apiKey, refreshToken) {
     this.serverUrl = serverUrl.replace(/\/$/, "");
     this.apiKey = apiKey;
+    if (refreshToken !== void 0)
+      this.refreshToken = refreshToken;
   }
   updateUserId(userId) {
     this.userId = userId;
+  }
+  updateRefreshToken(refreshToken) {
+    this.refreshToken = refreshToken;
   }
   // --- Core API ---
   /**
@@ -1558,16 +1566,31 @@ var LogographyServer = class {
     }
     const response = await (0, import_obsidian4.requestUrl)(params);
     if (response.status === 401) {
-      if (this.onAuthExpired) {
-        const refreshed = await this.onAuthExpired();
-        if (refreshed) {
-          params.headers = {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${this.apiKey}`
-          };
-          const retry = await (0, import_obsidian4.requestUrl)(params);
-          if (retry.status === 200)
-            return retry.json;
+      if (this.refreshToken) {
+        try {
+          const refreshRes = await (0, import_obsidian4.requestUrl)({
+            url: this.serverUrl + "/api/auth/refresh",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: this.refreshToken })
+          });
+          if (refreshRes.status === 200 && refreshRes.json.token) {
+            this.apiKey = refreshRes.json.token;
+            if (refreshRes.json.refresh_token) {
+              this.refreshToken = refreshRes.json.refresh_token;
+            }
+            if (this.onTokensUpdated) {
+              this.onTokensUpdated(this.apiKey, this.refreshToken);
+            }
+            params.headers = {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + this.apiKey
+            };
+            const retry = await (0, import_obsidian4.requestUrl)(params);
+            if (retry.status === 200)
+              return retry.json;
+          }
+        } catch (e) {
         }
       }
       throw new Error("Session expired. Please log in again in Settings.");
@@ -1998,8 +2021,14 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
     this.server = new LogographyServer(
       this.settings.serverUrl,
       this.settings.apiKey,
-      this.settings.userId
+      this.settings.userId,
+      this.settings.refreshToken || ""
     );
+    this.server.onTokensUpdated = async (token, refreshToken) => {
+      this.settings.apiKey = token;
+      this.settings.refreshToken = refreshToken;
+      await this.saveSettings();
+    };
     this.vaultStorage = new VaultStorage(this.app);
     await this.vaultStorage.ensureFolders();
     this.metricsReporter = new MetricsReporter(this.server);

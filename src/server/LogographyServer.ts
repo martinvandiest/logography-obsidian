@@ -21,6 +21,7 @@ export interface VaultChatResponse {
 
 export interface AuthResponse {
   token?: string;
+  refresh_token?: string;
   user_id: string;
   email: string;
   display_name?: string;
@@ -90,22 +91,29 @@ export interface SupportTicketDetail extends SupportTicket {
 export class LogographyServer {
   private serverUrl: string;
   private apiKey: string;
+  private refreshToken: string;
   private userId: string;
-  onAuthExpired: (() => Promise<boolean>) | null = null;
+  onTokensUpdated: ((token: string, refreshToken: string) => void) | null = null;
 
-  constructor(serverUrl: string, apiKey: string, userId: string) {
+  constructor(serverUrl: string, apiKey: string, userId: string, refreshToken = '') {
     this.serverUrl = serverUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
     this.userId = userId;
+    this.refreshToken = refreshToken;
   }
 
-  updateConfig(serverUrl: string, apiKey: string): void {
+  updateConfig(serverUrl: string, apiKey: string, refreshToken?: string): void {
     this.serverUrl = serverUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
+    if (refreshToken !== undefined) this.refreshToken = refreshToken;
   }
 
   updateUserId(userId: string): void {
     this.userId = userId;
+  }
+
+  updateRefreshToken(refreshToken: string): void {
+    this.refreshToken = refreshToken;
   }
 
   // --- Core API ---
@@ -248,17 +256,33 @@ export class LogographyServer {
     const response = await requestUrl(params);
 
     if (response.status === 401) {
-      // Try silent re-login if we have stored credentials
-      if (this.onAuthExpired) {
-        const refreshed = await this.onAuthExpired();
-        if (refreshed) {
-          // Retry the request with new token
-          params.headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.apiKey}`,
-          };
-          const retry = await requestUrl(params);
-          if (retry.status === 200) return retry.json;
+      // Try silent refresh if we have a refresh token
+      if (this.refreshToken) {
+        try {
+          const refreshRes = await requestUrl({
+            url: this.serverUrl + '/api/auth/refresh',
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: this.refreshToken }),
+          });
+          if (refreshRes.status === 200 && refreshRes.json.token) {
+            this.apiKey = refreshRes.json.token;
+            if (refreshRes.json.refresh_token) {
+              this.refreshToken = refreshRes.json.refresh_token;
+            }
+            if (this.onTokensUpdated) {
+              this.onTokensUpdated(this.apiKey, this.refreshToken);
+            }
+            // Retry original request with new token
+            params.headers = {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + this.apiKey,
+            };
+            const retry = await requestUrl(params);
+            if (retry.status === 200) return retry.json;
+          }
+        } catch {
+          // Refresh failed — fall through to error
         }
       }
       throw new Error('Session expired. Please log in again in Settings.');

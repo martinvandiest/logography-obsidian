@@ -8,6 +8,7 @@ export interface LogographySettings {
   // Auth (populated by login flow)
   serverUrl: string;
   apiKey: string;       // JWT token — set by login, not manually
+  refreshToken: string; // For silent token refresh
   userId: string;
   userEmail: string;
   userDisplayName: string;
@@ -56,6 +57,7 @@ export const MODELS = [
 export const DEFAULT_SETTINGS: LogographySettings = {
   serverUrl: 'https://logographyapp.com',
   apiKey: '',
+  refreshToken: '',
   userId: '',
   userEmail: '',
   userDisplayName: '',
@@ -540,10 +542,11 @@ export class LogographySettingTab extends PluginSettingTab {
       return;
     }
     this.plugin.settings.apiKey = response.token;
+    this.plugin.settings.refreshToken = response.refresh_token || '';
     this.plugin.settings.userId = response.user_id;
     this.plugin.settings.userEmail = response.email;
     this.plugin.settings.userDisplayName = response.display_name || '';
-    this.plugin.server.updateConfig(this.plugin.settings.serverUrl, response.token);
+    this.plugin.server.updateConfig(this.plugin.settings.serverUrl, response.token, response.refresh_token);
     this.plugin.server.updateUserId(response.user_id);
     await this.plugin.saveSettings();
 
