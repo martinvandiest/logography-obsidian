@@ -208,10 +208,14 @@ export class LogographyView extends ItemView {
       const errorMsg = error instanceof Error ? error.message : 'Connection error';
       this.addMessage('assistant', errorMsg);
 
-      // On auth errors, put the message back in the input so it's not lost
-      if (errorMsg.includes('expired') || errorMsg.includes('Invalid API key') || errorMsg.includes('401')) {
+      // On auth failure: preserve the user's input and remove from session
+      if (errorMsg.includes('expired') || errorMsg.includes('log in again')) {
         this.inputEl.value = text;
-        this.sessionState.conversation.pop(); // Remove the user message from state too
+        // Remove the user message from session state so it's not duplicated on retry
+        if (this.sessionState.conversation.length > 0 &&
+            this.sessionState.conversation[this.sessionState.conversation.length - 1].content === text) {
+          this.sessionState.conversation.pop();
+        }
       }
     }
   }
@@ -296,7 +300,18 @@ export class LogographyView extends ItemView {
 
   private addMessage(role: 'user' | 'assistant', text: string): HTMLElement {
     const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
-    msgEl.textContent = text;
+
+    // Voice label
+    const titleEl = msgEl.createDiv('logography-title-line');
+    const labelEl = titleEl.createSpan({
+      cls: role === 'user' ? 'logography-user-label' : 'logography-ai-label',
+      text: role === 'user' ? 'You' : 'Logography',
+    });
+
+    // Message body — plain text, selectable
+    const bodyEl = msgEl.createDiv('logography-message-body');
+    bodyEl.textContent = text;
+
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
     return msgEl;
   }
