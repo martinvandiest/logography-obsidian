@@ -87,6 +87,10 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     this.supportDescription = "";
     this.plugin = plugin;
   }
+  // Required override for Obsidian 1.13+ — return empty so display() still runs
+  getSettingDefinitions() {
+    return [];
+  }
   display() {
     const { containerEl } = this;
     containerEl.empty();
@@ -197,7 +201,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     backBtn.addEventListener("click", () => {
       this.showMfa = false;
       this.mfaUserId = "";
-      this.display();
+      this.update();
     });
   }
   renderLoggedIn(containerEl) {
@@ -221,7 +225,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       btn.setButtonText(this.showSupportForm ? "Cancel" : "Contact Support");
       btn.onClick(() => {
         this.showSupportForm = !this.showSupportForm;
-        this.display();
+        this.update();
       });
     });
     if (this.showSupportForm) {
@@ -238,7 +242,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
         this.plugin.server.updateConfig(this.plugin.settings.serverUrl, "");
         await this.plugin.saveSettings();
         new import_obsidian.Notice("Signed out");
-        this.display();
+        this.update();
       })();
     });
   }
@@ -307,7 +311,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       this.supportCategory = "general";
       this.supportSeverity = "medium";
       this.supportDescription = "";
-      this.display();
+      this.update();
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Failed to submit ticket";
       new import_obsidian.Notice(`Ticket submission failed: ${msg}`);
@@ -406,7 +410,7 @@ ${conversation}
       if (response.mfa_required) {
         this.mfaUserId = response.user_id;
         this.showMfa = true;
-        this.display();
+        this.update();
         return;
       }
       await this.onLoginSuccess(response);
@@ -450,7 +454,7 @@ ${conversation}
     this.loginEmail = "";
     this.loginPassword = "";
     new import_obsidian.Notice(`Signed in as ${response.email}`);
-    this.display();
+    this.update();
   }
 };
 

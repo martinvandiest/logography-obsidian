@@ -87,6 +87,11 @@ export class LogographySettingTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
+  // Required override for Obsidian 1.13+ — return empty so display() still runs
+  getSettingDefinitions() {
+    return [];
+  }
+
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
@@ -247,7 +252,7 @@ export class LogographySettingTab extends PluginSettingTab {
     backBtn.addEventListener('click', () => {
       this.showMfa = false;
       this.mfaUserId = '';
-      this.display();
+      this.update();
     });
   }
 
@@ -280,7 +285,7 @@ export class LogographySettingTab extends PluginSettingTab {
       btn.setButtonText(this.showSupportForm ? 'Cancel' : 'Contact Support');
       btn.onClick(() => {
         this.showSupportForm = !this.showSupportForm;
-        this.display();
+        this.update();
       });
     });
 
@@ -299,7 +304,7 @@ export class LogographySettingTab extends PluginSettingTab {
         this.plugin.server.updateConfig(this.plugin.settings.serverUrl, '');
         await this.plugin.saveSettings();
         new Notice('Signed out');
-        this.display();
+        this.update();
       })();
     });
   }
@@ -380,7 +385,7 @@ export class LogographySettingTab extends PluginSettingTab {
       this.supportCategory = 'general';
       this.supportSeverity = 'medium';
       this.supportDescription = '';
-      this.display();
+      this.update();
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to submit ticket';
       new Notice(`Ticket submission failed: ${msg}`);
@@ -499,7 +504,7 @@ export class LogographySettingTab extends PluginSettingTab {
       if (response.mfa_required) {
         this.mfaUserId = response.user_id;
         this.showMfa = true;
-        this.display();
+        this.update();
         return;
       }
 
@@ -550,6 +555,6 @@ export class LogographySettingTab extends PluginSettingTab {
     this.loginPassword = '';
 
     new Notice(`Signed in as ${response.email}`);
-    this.display();
+    this.update();
   }
 }
