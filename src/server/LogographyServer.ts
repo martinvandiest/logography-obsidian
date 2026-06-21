@@ -67,6 +67,7 @@ export class LogographyServer {
   private serverUrl: string;
   private apiKey: string;
   private userId: string;
+  onAuthExpired: (() => Promise<boolean>) | null = null;
 
   constructor(serverUrl: string, apiKey: string, userId: string) {
     this.serverUrl = serverUrl.replace(/\/$/, '');
@@ -193,7 +194,20 @@ export class LogographyServer {
     const response = await requestUrl(params);
 
     if (response.status === 401) {
-      throw new Error('Invalid API key. Check your Logography settings.');
+      // Try silent re-login if we have stored credentials
+      if (this.onAuthExpired) {
+        const refreshed = await this.onAuthExpired();
+        if (refreshed) {
+          // Retry the request with new token
+          params.headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+          };
+          const retry = await requestUrl(params);
+          if (retry.status === 200) return retry.json;
+        }
+      }
+      throw new Error('Session expired. Please log in again in Settings.');
     }
     if (response.status === 403) {
       throw new Error('Account inactive or session limit reached.');

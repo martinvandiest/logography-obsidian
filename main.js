@@ -1337,6 +1337,7 @@ var SessionListView = class extends import_obsidian3.ItemView {
 var import_obsidian4 = require("obsidian");
 var LogographyServer = class {
   constructor(serverUrl, apiKey, userId) {
+    this.onAuthExpired = null;
     this.serverUrl = serverUrl.replace(/\/$/, "");
     this.apiKey = apiKey;
     this.userId = userId;
@@ -1432,7 +1433,19 @@ var LogographyServer = class {
     }
     const response = await (0, import_obsidian4.requestUrl)(params);
     if (response.status === 401) {
-      throw new Error("Invalid API key. Check your Logography settings.");
+      if (this.onAuthExpired) {
+        const refreshed = await this.onAuthExpired();
+        if (refreshed) {
+          params.headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${this.apiKey}`
+          };
+          const retry = await (0, import_obsidian4.requestUrl)(params);
+          if (retry.status === 200)
+            return retry.json;
+        }
+      }
+      throw new Error("Session expired. Please log in again in Settings.");
     }
     if (response.status === 403) {
       throw new Error("Account inactive or session limit reached.");
