@@ -2,7 +2,7 @@
 // This replaces the server-side _extract_session_summary() and buildSessionIndex()
 
 import { VaultStorage } from '../storage/VaultStorage';
-import { SessionState, currentStep, currentBelief } from './types';
+import { SessionState } from './types';
 
 export interface CrossSessionContext {
   recentSessions: SessionSummary[];

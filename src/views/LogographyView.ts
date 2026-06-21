@@ -3,7 +3,7 @@
 
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import type LogographyPlugin from '../main';
-import { SessionState, createSession, currentStep, currentBelief, PhaseSignal } from '../engine/types';
+import { SessionState, createSession, currentStep } from '../engine/types';
 import { StateMachine } from '../engine/StateMachine';
 import { CrossSessionMemory } from '../engine/CrossSessionMemory';
 import { summarizeSession } from '../engine/SessionSummarizer';
@@ -85,12 +85,12 @@ export class LogographyView extends ItemView {
 
     // Auto-resize textarea
     this.inputEl.addEventListener('input', () => {
-      this.inputEl.style.height = 'auto';
-      this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + 'px';
+      this.inputEl.setCssStyles({ height: 'auto' });
+      this.inputEl.setCssStyles({ height: `${Math.min(this.inputEl.scrollHeight, 120)}px` });
     });
 
     // Sleepy UI: auto-focus input
-    setTimeout(() => this.inputEl.focus(), 50);
+    window.setTimeout(() => this.inputEl.focus(), 50);
 
     // Load or create session
     await this.loadOrCreateSession();
@@ -138,7 +138,7 @@ export class LogographyView extends ItemView {
     // Add user message to UI
     this.addMessage('user', text);
     this.inputEl.value = '';
-    this.inputEl.style.height = 'auto';
+    this.inputEl.setCssStyles({ height: 'auto' });
 
     // Add to state conversation
     this.sessionState.conversation.push({
@@ -230,7 +230,7 @@ export class LogographyView extends ItemView {
 
     // Sync to server if enabled
     if (this.plugin.settings.syncEnabled && this.plugin.settings.apiKey) {
-      this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
+      void this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
     }
   }
 
@@ -303,7 +303,7 @@ export class LogographyView extends ItemView {
 
     // Voice label
     const titleEl = msgEl.createDiv('logography-title-line');
-    const labelEl = titleEl.createSpan({
+    titleEl.createSpan({
       cls: role === 'user' ? 'logography-user-label' : 'logography-ai-label',
       text: role === 'user' ? 'You' : 'Logography',
     });

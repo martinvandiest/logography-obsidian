@@ -4,12 +4,10 @@
 
 import {
   SessionState,
-  PhaseValue,
   Phase,
   PHASE_ORDER,
   PHASE_STEPS,
   PhaseSignal,
-  currentStep,
 } from './types';
 
 export class StateMachine {

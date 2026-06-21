@@ -13,9 +13,11 @@ const SESSIONS_FOLDER = 'Logography/Sessions';
 const JOURNAL_FOLDER = 'Logography/Journal';
 
 export class VaultStorage {
+  private app: App;
   private vault: Vault;
 
   constructor(app: App) {
+    this.app = app;
     this.vault = app.vault;
   }
 
@@ -139,7 +141,7 @@ export class VaultStorage {
         const content = await this.vault.read(file);
         const frontmatter = this.parseFrontmatter(content);
         if (frontmatter && frontmatter.session_id === sessionId) {
-          await this.vault.delete(file);
+          await this.app.fileManager.trashFile(file);
           return true;
         }
       }

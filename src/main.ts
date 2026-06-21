@@ -1,7 +1,7 @@
 // Logography — Obsidian Plugin for AI Dream Analysis
 // Architecture: Vault as source of truth. Plugin is the brain, server is the tongue.
 
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from './settings';
 import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from './views/LogographyView';
 import { SessionListView, VIEW_TYPE_SESSION_LIST } from './views/SessionListView';
@@ -57,35 +57,35 @@ export default class LogographyPlugin extends Plugin {
 
     // Ribbon icon — opens both chat + session list
     this.addRibbonIcon('brain', 'Open Logography', () => {
-      this.activateView();
+      void this.activateView();
     });
 
     // Commands
     this.addCommand({
       id: 'open',
-      name: 'Open Logography',
-      callback: () => this.activateView(),
+      name: 'Open',
+      callback: () => { void this.activateView(); },
     });
 
     this.addCommand({
       id: 'new-session',
-      name: 'Logography: New Session',
+      name: 'New Session',
       callback: () => {
-        this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => leaf.detach());
-        this.activateView();
+        this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach(leaf => { void leaf.detach(); });
+        void this.activateView();
       },
     });
 
     this.addCommand({
       id: 'open-session-list',
-      name: 'Logography: Open Session List',
-      callback: () => this.activateSessionList(),
+      name: 'Open Session List',
+      callback: () => { void this.activateSessionList(); },
     });
 
     this.addCommand({
       id: 'quick-capture',
-      name: 'Logography: Quick Capture',
-      callback: () => this.quickCapture(),
+      name: 'Quick Capture',
+      callback: () => { void this.quickCapture(); },
     });
 
     // Settings tab

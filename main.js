@@ -90,8 +90,8 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Logography Settings" });
-    containerEl.createEl("h3", { text: "Account" });
+    new import_obsidian.Setting(containerEl).setName("Logography").setHeading();
+    new import_obsidian.Setting(containerEl).setName("Account").setHeading();
     const isLoggedIn = !!this.plugin.settings.apiKey;
     if (isLoggedIn) {
       this.renderLoggedIn(containerEl);
@@ -101,7 +101,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       this.renderLogin(containerEl);
     }
     if (isLoggedIn) {
-      containerEl.createEl("h3", { text: "Session" });
+      new import_obsidian.Setting(containerEl).setName("Session").setHeading();
       new import_obsidian.Setting(containerEl).setName("Your name").setDesc("How the guide addresses you (optional)").addText(
         (text) => text.setPlaceholder("Enter your name").setValue(this.plugin.settings.userName).onChange(async (value) => {
           this.plugin.settings.userName = value;
@@ -124,14 +124,14 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
-      containerEl.createEl("h3", { text: "Sync" });
+      new import_obsidian.Setting(containerEl).setName("Sync").setHeading();
       new import_obsidian.Setting(containerEl).setName("Sync sessions to server").setDesc("Store session content on the server for cross-device access. Your vault remains the source of truth \u2014 this pushes a copy to the server. Sessions are retained according to your account retention policy. Requires login.").addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.syncEnabled).onChange(async (value) => {
           this.plugin.settings.syncEnabled = value;
           await this.plugin.saveSettings();
         })
       );
-      containerEl.createEl("h3", { text: "AI Model" });
+      new import_obsidian.Setting(containerEl).setName("AI Model").setHeading();
       new import_obsidian.Setting(containerEl).setName("Model").setDesc("Which AI model to use for analysis").addDropdown((dropdown) => {
         for (const model of MODELS) {
           dropdown.addOption(model.value, model.label);
@@ -143,7 +143,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
         });
       });
     }
-    containerEl.createEl("h3", { text: "Status" });
+    new import_obsidian.Setting(containerEl).setName("Status").setHeading();
     this.statusEl = containerEl.createDiv();
     this.renderStatus();
   }
@@ -175,8 +175,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       text: "Create account",
       href: "https://logographyapp.com"
     });
-    signupLink.style.marginLeft = "16px";
-    signupLink.style.fontSize = "13px";
+    signupLink.addClass("logography-signup-link");
   }
   renderMfa(containerEl) {
     const mfaDiv = containerEl.createDiv("logography-mfa-form");
@@ -195,7 +194,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     });
     verifyBtn.addEventListener("click", () => this.handleMfaVerify());
     const backBtn = btnRow.createEl("button", { text: "Back" });
-    backBtn.style.marginLeft = "8px";
+    backBtn.addClass("logography-back-btn");
     backBtn.addEventListener("click", () => {
       this.showMfa = false;
       this.mfaUserId = "";
@@ -230,7 +229,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       this.renderSupportForm(infoDiv);
     }
     const logoutBtn = infoDiv.createEl("button", { text: "Sign out" });
-    logoutBtn.style.marginTop = "12px";
+    logoutBtn.addClass("logography-logout-btn");
     logoutBtn.addEventListener("click", async () => {
       this.plugin.settings.apiKey = "";
       this.plugin.settings.userId = "";
@@ -244,10 +243,6 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   }
   renderSupportForm(containerEl) {
     const formDiv = containerEl.createDiv("logography-support-form");
-    formDiv.style.marginTop = "8px";
-    formDiv.style.padding = "12px";
-    formDiv.style.border = "1px solid var(--background-modifier-border)";
-    formDiv.style.borderRadius = "6px";
     new import_obsidian.Setting(formDiv).setName("Subject").addText((text) => {
       text.setPlaceholder("Brief summary of your issue").setValue(this.supportSubject).onChange((value) => {
         this.supportSubject = value;
@@ -278,9 +273,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     const textarea = descSetting.settingEl.createEl("textarea");
     textarea.placeholder = "Describe your issue in detail...";
     textarea.value = this.supportDescription;
-    textarea.style.width = "100%";
-    textarea.style.minHeight = "80px";
-    textarea.style.marginTop = "4px";
+    textarea.addClass("logography-support-textarea");
     textarea.addEventListener("input", () => {
       this.supportDescription = textarea.value;
     });
@@ -288,7 +281,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       text: "Submit Ticket",
       cls: "mod-cta"
     });
-    submitBtn.style.marginTop = "8px";
+    submitBtn.addClass("logography-submit-btn");
     submitBtn.addEventListener("click", () => this.handleSubmitTicket());
   }
   async handleSubmitTicket() {
@@ -1144,10 +1137,10 @@ var LogographyView = class extends import_obsidian2.ItemView {
       }
     });
     this.inputEl.addEventListener("input", () => {
-      this.inputEl.style.height = "auto";
-      this.inputEl.style.height = Math.min(this.inputEl.scrollHeight, 120) + "px";
+      this.inputEl.setCssStyles({ height: "auto" });
+      this.inputEl.setCssStyles({ height: `${Math.min(this.inputEl.scrollHeight, 120)}px` });
     });
-    setTimeout(() => this.inputEl.focus(), 50);
+    window.setTimeout(() => this.inputEl.focus(), 50);
     await this.loadOrCreateSession();
   }
   async onClose() {
@@ -1182,7 +1175,7 @@ var LogographyView = class extends import_obsidian2.ItemView {
     }
     this.addMessage("user", text);
     this.inputEl.value = "";
-    this.inputEl.style.height = "auto";
+    this.inputEl.setCssStyles({ height: "auto" });
     this.sessionState.conversation.push({
       role: "user",
       content: text,
@@ -1240,7 +1233,7 @@ var LogographyView = class extends import_obsidian2.ItemView {
       console.error("Failed to save session to vault:", err);
     }
     if (this.plugin.settings.syncEnabled && this.plugin.settings.apiKey) {
-      this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
+      void this.plugin.server.syncSession(this.sessionState, this.sessionState.summary);
     }
   }
   async onSessionComplete() {
@@ -1294,7 +1287,7 @@ var LogographyView = class extends import_obsidian2.ItemView {
   addMessage(role, text) {
     const msgEl = this.messagesEl.createDiv(`logography-message ${role}`);
     const titleEl = msgEl.createDiv("logography-title-line");
-    const labelEl = titleEl.createSpan({
+    titleEl.createSpan({
       cls: role === "user" ? "logography-user-label" : "logography-ai-label",
       text: role === "user" ? "You" : "Logography"
     });
@@ -1420,19 +1413,21 @@ var SessionListView = class extends import_obsidian3.ItemView {
         const summaryEl = item.createDiv("logography-session-summary");
         summaryEl.textContent = session.summary.slice(0, 100) + (session.summary.length > 100 ? "..." : "");
       }
-      item.addEventListener("click", async () => {
-        let chatLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
-        if (!chatLeaf) {
-          chatLeaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf();
-          await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
-        }
-        const chatView = chatLeaf.view;
-        await chatView.loadSession(session);
-        this.app.workspace.revealLeaf(chatLeaf);
-        this.listEl.querySelectorAll(".logography-session-item").forEach(
-          (el) => el.removeClass("active")
-        );
-        item.addClass("active");
+      item.addEventListener("click", () => {
+        void (async () => {
+          let chatLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
+          if (!chatLeaf) {
+            chatLeaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf();
+            await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
+          }
+          const chatView = chatLeaf.view;
+          await chatView.loadSession(session);
+          this.app.workspace.revealLeaf(chatLeaf);
+          this.listEl.querySelectorAll(".logography-session-item").forEach(
+            (el) => el.removeClass("active")
+          );
+          item.addClass("active");
+        })();
       });
     }
   }
@@ -1652,6 +1647,7 @@ var SESSIONS_FOLDER = "Logography/Sessions";
 var JOURNAL_FOLDER = "Logography/Journal";
 var VaultStorage = class {
   constructor(app) {
+    this.app = app;
     this.vault = app.vault;
   }
   getVault() {
@@ -1766,7 +1762,7 @@ var VaultStorage = class {
         const content = await this.vault.read(file);
         const frontmatter = this.parseFrontmatter(content);
         if (frontmatter && frontmatter.session_id === sessionId) {
-          await this.vault.delete(file);
+          await this.app.fileManager.trashFile(file);
           return true;
         }
       }
@@ -2039,30 +2035,38 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
       return view;
     });
     this.addRibbonIcon("brain", "Open Logography", () => {
-      this.activateView();
+      void this.activateView();
     });
     this.addCommand({
       id: "open",
-      name: "Open Logography",
-      callback: () => this.activateView()
+      name: "Open",
+      callback: () => {
+        void this.activateView();
+      }
     });
     this.addCommand({
       id: "new-session",
-      name: "Logography: New Session",
+      name: "New Session",
       callback: () => {
-        this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach((leaf) => leaf.detach());
-        this.activateView();
+        this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY).forEach((leaf) => {
+          void leaf.detach();
+        });
+        void this.activateView();
       }
     });
     this.addCommand({
       id: "open-session-list",
-      name: "Logography: Open Session List",
-      callback: () => this.activateSessionList()
+      name: "Open Session List",
+      callback: () => {
+        void this.activateSessionList();
+      }
     });
     this.addCommand({
       id: "quick-capture",
-      name: "Logography: Quick Capture",
-      callback: () => this.quickCapture()
+      name: "Quick Capture",
+      callback: () => {
+        void this.quickCapture();
+      }
     });
     this.addSettingTab(new LogographySettingTab(this.app, this));
     console.log("Logography loaded \u2014 Philosophical Midwifery for Obsidian");

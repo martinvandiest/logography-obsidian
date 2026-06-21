@@ -91,10 +91,10 @@ export class LogographySettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'Logography Settings' });
+    new Setting(containerEl).setName('Logography').setHeading();
 
     // --- Account ---
-    containerEl.createEl('h3', { text: 'Account' });
+    new Setting(containerEl).setName('Account').setHeading();
 
     const isLoggedIn = !!this.plugin.settings.apiKey;
 
@@ -108,7 +108,7 @@ export class LogographySettingTab extends PluginSettingTab {
 
     // --- Session (only when logged in) ---
     if (isLoggedIn) {
-      containerEl.createEl('h3', { text: 'Session' });
+      new Setting(containerEl).setName('Session').setHeading();
 
       new Setting(containerEl)
         .setName('Your name')
@@ -148,7 +148,7 @@ export class LogographySettingTab extends PluginSettingTab {
         );
 
       // --- Sync ---
-      containerEl.createEl('h3', { text: 'Sync' });
+      new Setting(containerEl).setName('Sync').setHeading();
 
       new Setting(containerEl)
         .setName('Sync sessions to server')
@@ -161,7 +161,7 @@ export class LogographySettingTab extends PluginSettingTab {
         );
 
       // --- Model ---
-      containerEl.createEl('h3', { text: 'AI Model' });
+      new Setting(containerEl).setName('AI Model').setHeading();
 
       new Setting(containerEl)
         .setName('Model')
@@ -179,7 +179,7 @@ export class LogographySettingTab extends PluginSettingTab {
     }
 
     // --- Status ---
-    containerEl.createEl('h3', { text: 'Status' });
+    new Setting(containerEl).setName('Status').setHeading();
     this.statusEl = containerEl.createDiv();
     this.renderStatus();
   }
@@ -220,8 +220,7 @@ export class LogographySettingTab extends PluginSettingTab {
       text: 'Create account',
       href: 'https://logographyapp.com',
     });
-    signupLink.style.marginLeft = '16px';
-    signupLink.style.fontSize = '13px';
+    signupLink.addClass('logography-signup-link');
   }
 
   private renderMfa(containerEl: HTMLElement): void {
@@ -246,7 +245,7 @@ export class LogographySettingTab extends PluginSettingTab {
     verifyBtn.addEventListener('click', () => this.handleMfaVerify());
 
     const backBtn = btnRow.createEl('button', { text: 'Back' });
-    backBtn.style.marginLeft = '8px';
+    backBtn.addClass('logography-back-btn');
     backBtn.addEventListener('click', () => {
       this.showMfa = false;
       this.mfaUserId = '';
@@ -292,7 +291,7 @@ export class LogographySettingTab extends PluginSettingTab {
     }
 
     const logoutBtn = infoDiv.createEl('button', { text: 'Sign out' });
-    logoutBtn.style.marginTop = '12px';
+    logoutBtn.addClass('logography-logout-btn');
     logoutBtn.addEventListener('click', async () => {
       this.plugin.settings.apiKey = '';
       this.plugin.settings.userId = '';
@@ -307,10 +306,7 @@ export class LogographySettingTab extends PluginSettingTab {
 
   private renderSupportForm(containerEl: HTMLElement): void {
     const formDiv = containerEl.createDiv('logography-support-form');
-    formDiv.style.marginTop = '8px';
-    formDiv.style.padding = '12px';
-    formDiv.style.border = '1px solid var(--background-modifier-border)';
-    formDiv.style.borderRadius = '6px';
+    // Styles applied via .logography-support-form CSS class
 
     new Setting(formDiv)
       .setName('Subject')
@@ -348,9 +344,7 @@ export class LogographySettingTab extends PluginSettingTab {
     const textarea = descSetting.settingEl.createEl('textarea');
     textarea.placeholder = 'Describe your issue in detail...';
     textarea.value = this.supportDescription;
-    textarea.style.width = '100%';
-    textarea.style.minHeight = '80px';
-    textarea.style.marginTop = '4px';
+    textarea.addClass('logography-support-textarea');
     textarea.addEventListener('input', () => {
       this.supportDescription = textarea.value;
     });
@@ -359,7 +353,7 @@ export class LogographySettingTab extends PluginSettingTab {
       text: 'Submit Ticket',
       cls: 'mod-cta',
     });
-    submitBtn.style.marginTop = '8px';
+    submitBtn.addClass('logography-submit-btn');
     submitBtn.addEventListener('click', () => this.handleSubmitTicket());
   }
 

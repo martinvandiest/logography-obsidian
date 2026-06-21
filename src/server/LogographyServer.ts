@@ -2,7 +2,7 @@
 // Server authenticates, routes to AI model, returns response. Stores nothing.
 
 import { requestUrl, RequestUrlParam } from 'obsidian';
-import { SessionState, PhaseValue } from '../engine/types';
+import { SessionState } from '../engine/types';
 import { CrossSessionContext } from '../engine/CrossSessionMemory';
 
 export interface VaultChatRequest {
@@ -93,7 +93,7 @@ export class LogographyServer {
   private apiKey: string;
   private refreshToken: string;
   private userId: string;
-  onTokensUpdated: ((token: string, refreshToken: string) => void) | null = null;
+  onTokensUpdated: ((token: string, refreshToken: string) => void | Promise<void>) | null = null;
 
   constructor(serverUrl: string, apiKey: string, userId: string, refreshToken = '') {
     this.serverUrl = serverUrl.replace(/\/$/, '');
@@ -238,7 +238,7 @@ export class LogographyServer {
 
   // --- Internal ---
 
-  private async request(method: string, path: string, body?: unknown): Promise<any> {
+  private async request<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
     const params: RequestUrlParam = {
       url: `${this.serverUrl}${path}`,
       method,

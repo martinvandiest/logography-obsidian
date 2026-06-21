@@ -77,23 +77,25 @@ export class SessionListView extends ItemView {
       }
 
       // Click to open session in chat view
-      item.addEventListener('click', async () => {
-        // Find or create the chat view
-        let chatLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
-        if (!chatLeaf) {
-          chatLeaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf();
-          await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
-        }
+      item.addEventListener('click', () => {
+        void (async () => {
+          // Find or create the chat view
+          let chatLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_LOGOGRAPHY)[0];
+          if (!chatLeaf) {
+            chatLeaf = this.app.workspace.getRightLeaf(false) || this.app.workspace.getLeaf();
+            await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
+          }
 
-        const chatView = chatLeaf.view as LogographyView;
-        await chatView.loadSession(session);
-        this.app.workspace.revealLeaf(chatLeaf);
+          const chatView = chatLeaf.view as LogographyView;
+          await chatView.loadSession(session);
+          this.app.workspace.revealLeaf(chatLeaf);
 
-        // Highlight active session
-        this.listEl.querySelectorAll('.logography-session-item').forEach(el =>
-          el.removeClass('active')
-        );
-        item.addClass('active');
+          // Highlight active session
+          this.listEl.querySelectorAll('.logography-session-item').forEach(el =>
+            el.removeClass('active')
+          );
+          item.addClass('active');
+        })();
       });
     }
   }

@@ -1,7 +1,7 @@
 // Session Summarizer — compute summaries for frontmatter after each session
 // Runs locally — no API call needed, pure text analysis
 
-import { SessionState, ConversationMessage, Belief } from './types';
+import { SessionState, ConversationMessage } from './types';
 
 export interface SessionSummaryData {
   summary: string;

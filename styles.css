@@ -201,3 +201,34 @@
   color: var(--text-faint);
   line-height: 1.3;
 }
+
+/* Settings page helpers */
+.logography-signup-link {
+  margin-left: 16px;
+  font-size: 13px;
+}
+
+.logography-back-btn {
+  margin-left: 8px;
+}
+
+.logography-logout-btn {
+  margin-top: 12px;
+}
+
+.logography-support-form {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.logography-support-textarea {
+  width: 100%;
+  min-height: 80px;
+  margin-top: 4px;
+}
+
+.logography-submit-btn {
+  margin-top: 8px;
+}

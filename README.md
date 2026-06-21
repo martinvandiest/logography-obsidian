@@ -71,7 +71,7 @@ When sync is disabled (default):
 
 ## Support
 
-- [GitHub Issues](https://github.com/logography-app/logography-obsidian/issues)
+- [GitHub Issues](https://github.com/martinvandiest/logography-obsidian/issues)
 
 ## License
 
