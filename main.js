@@ -1128,6 +1128,10 @@ var LogographyView = class extends import_obsidian2.ItemView {
         thinking.remove();
       const errorMsg = error instanceof Error ? error.message : "Connection error";
       this.addMessage("assistant", errorMsg);
+      if (errorMsg.includes("expired") || errorMsg.includes("Invalid API key") || errorMsg.includes("401")) {
+        this.inputEl.value = text;
+        this.sessionState.conversation.pop();
+      }
     }
   }
   async saveSession() {

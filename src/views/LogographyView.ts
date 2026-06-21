@@ -207,6 +207,12 @@ export class LogographyView extends ItemView {
 
       const errorMsg = error instanceof Error ? error.message : 'Connection error';
       this.addMessage('assistant', errorMsg);
+
+      // On auth errors, put the message back in the input so it's not lost
+      if (errorMsg.includes('expired') || errorMsg.includes('Invalid API key') || errorMsg.includes('401')) {
+        this.inputEl.value = text;
+        this.sessionState.conversation.pop(); // Remove the user message from state too
+      }
     }
   }
 
