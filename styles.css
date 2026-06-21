@@ -57,6 +57,8 @@
   line-height: var(--line-height-normal);
   font-size: var(--font-text-size);
   color: var(--text-normal);
+  user-select: text;
+  cursor: text;
 }
 
 .logography-message.user {
