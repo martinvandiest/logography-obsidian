@@ -90,7 +90,6 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian.Setting(containerEl).setName("Logography").setHeading();
     new import_obsidian.Setting(containerEl).setName("Account").setHeading();
     const isLoggedIn = !!this.plugin.settings.apiKey;
     if (isLoggedIn) {
@@ -170,7 +169,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       text: "Sign in",
       cls: "mod-cta"
     });
-    loginBtn.addEventListener("click", () => this.handleLogin());
+    loginBtn.addEventListener("click", () => void this.handleLogin());
     const signupLink = btnRow.createEl("a", {
       text: "Create account",
       href: "https://logographyapp.com"
@@ -192,7 +191,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       text: "Verify",
       cls: "mod-cta"
     });
-    verifyBtn.addEventListener("click", () => this.handleMfaVerify());
+    verifyBtn.addEventListener("click", () => void this.handleMfaVerify());
     const backBtn = btnRow.createEl("button", { text: "Back" });
     backBtn.addClass("logography-back-btn");
     backBtn.addEventListener("click", () => {
@@ -230,15 +229,17 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
     }
     const logoutBtn = infoDiv.createEl("button", { text: "Sign out" });
     logoutBtn.addClass("logography-logout-btn");
-    logoutBtn.addEventListener("click", async () => {
-      this.plugin.settings.apiKey = "";
-      this.plugin.settings.userId = "";
-      this.plugin.settings.userEmail = "";
-      this.plugin.settings.userDisplayName = "";
-      this.plugin.server.updateConfig(this.plugin.settings.serverUrl, "");
-      await this.plugin.saveSettings();
-      new import_obsidian.Notice("Signed out");
-      this.display();
+    logoutBtn.addEventListener("click", () => {
+      void (async () => {
+        this.plugin.settings.apiKey = "";
+        this.plugin.settings.userId = "";
+        this.plugin.settings.userEmail = "";
+        this.plugin.settings.userDisplayName = "";
+        this.plugin.server.updateConfig(this.plugin.settings.serverUrl, "");
+        await this.plugin.saveSettings();
+        new import_obsidian.Notice("Signed out");
+        this.display();
+      })();
     });
   }
   renderSupportForm(containerEl) {
@@ -282,7 +283,7 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
       cls: "mod-cta"
     });
     submitBtn.addClass("logography-submit-btn");
-    submitBtn.addEventListener("click", () => this.handleSubmitTicket());
+    submitBtn.addEventListener("click", () => void this.handleSubmitTicket());
   }
   async handleSubmitTicket() {
     if (!this.supportSubject.trim()) {
@@ -1114,7 +1115,7 @@ var LogographyView = class extends import_obsidian2.ItemView {
       text: "New Session",
       cls: "logography-new-session-btn"
     });
-    newSessionBtn.addEventListener("click", () => this.startNewSession());
+    newSessionBtn.addEventListener("click", () => void this.startNewSession());
     this.phaseEl = container.createDiv("logography-phase-indicator");
     this.messagesEl = container.createDiv("logography-messages");
     const inputArea = container.createDiv("logography-input-area");
@@ -1129,11 +1130,11 @@ var LogographyView = class extends import_obsidian2.ItemView {
       text: "Send",
       cls: "logography-send-btn mod-cta"
     });
-    sendBtn.addEventListener("click", () => this.handleSend());
+    sendBtn.addEventListener("click", () => void this.handleSend());
     this.inputEl.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        this.handleSend();
+        void this.handleSend();
       }
     });
     this.inputEl.addEventListener("input", () => {
@@ -1245,7 +1246,7 @@ var LogographyView = class extends import_obsidian2.ItemView {
     const durationMinutes = Math.round((Date.now() - this.sessionStartTime) / 6e4);
     const phasesCompleted = this.getPhasesCompleted();
     const deflated = this.sessionState.beliefs.filter((b) => b.status === "deflated" || b.status === "partially_deflated").length;
-    this.plugin.server.sendMetrics({
+    void this.plugin.server.sendMetrics({
       user_id: this.sessionState.userId,
       session_id: this.sessionState.sessionId,
       metrics: {
@@ -1382,7 +1383,7 @@ var SessionListView = class extends import_obsidian3.ItemView {
       cls: "logography-new-session-btn",
       attr: { title: "Refresh session list" }
     });
-    refreshBtn.addEventListener("click", () => this.refresh());
+    refreshBtn.addEventListener("click", () => void this.refresh());
     this.listEl = container.createDiv("logography-sessions");
     await this.refresh();
   }
@@ -1422,7 +1423,7 @@ var SessionListView = class extends import_obsidian3.ItemView {
           }
           const chatView = chatLeaf.view;
           await chatView.loadSession(session);
-          this.app.workspace.revealLeaf(chatLeaf);
+          await this.app.workspace.revealLeaf(chatLeaf);
           this.listEl.querySelectorAll(".logography-session-item").forEach(
             (el) => el.removeClass("active")
           );
@@ -1569,21 +1570,24 @@ var LogographyServer = class {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: this.refreshToken })
           });
-          if (refreshRes.status === 200 && refreshRes.json.token) {
-            this.apiKey = refreshRes.json.token;
-            if (refreshRes.json.refresh_token) {
-              this.refreshToken = refreshRes.json.refresh_token;
+          if (refreshRes.status === 200) {
+            const refreshData = refreshRes.json;
+            if (refreshData.token) {
+              this.apiKey = refreshData.token;
+              if (refreshData.refresh_token) {
+                this.refreshToken = refreshData.refresh_token;
+              }
+              if (this.onTokensUpdated) {
+                void this.onTokensUpdated(this.apiKey, this.refreshToken);
+              }
+              params.headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + this.apiKey
+              };
+              const retry = await (0, import_obsidian4.requestUrl)(params);
+              if (retry.status === 200)
+                return retry.json;
             }
-            if (this.onTokensUpdated) {
-              this.onTokensUpdated(this.apiKey, this.refreshToken);
-            }
-            params.headers = {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + this.apiKey
-            };
-            const retry = await (0, import_obsidian4.requestUrl)(params);
-            if (retry.status === 200)
-              return retry.json;
           }
         } catch (e) {
         }
@@ -2008,7 +2012,10 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
     super(...arguments);
     this.sessionListView = null;
   }
-  async onload() {
+  onload() {
+    void this._onload();
+  }
+  async _onload() {
     await this.loadSettings();
     if (!this.settings.userId) {
       this.settings.userId = `obsidian_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -2071,7 +2078,7 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
     this.addSettingTab(new LogographySettingTab(this.app, this));
     console.log("Logography loaded \u2014 Philosophical Midwifery for Obsidian");
   }
-  async onunload() {
+  onunload() {
     console.log("Logography unloaded");
   }
   async loadSettings() {
@@ -2091,7 +2098,7 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
       chatLeaf = workspace.getRightLeaf(false) || workspace.getLeaf();
       await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
     }
-    workspace.revealLeaf(chatLeaf);
+    await workspace.revealLeaf(chatLeaf);
     await this.activateSessionList();
   }
   async activateSessionList() {
@@ -2109,7 +2116,7 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
   }
   refreshSessionList() {
     if (this.sessionListView) {
-      this.sessionListView.refresh();
+      void this.sessionListView.refresh();
     }
   }
   async quickCapture() {

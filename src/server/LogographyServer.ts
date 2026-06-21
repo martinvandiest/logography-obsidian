@@ -265,21 +265,24 @@ export class LogographyServer {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token: this.refreshToken }),
           });
-          if (refreshRes.status === 200 && refreshRes.json.token) {
-            this.apiKey = refreshRes.json.token;
-            if (refreshRes.json.refresh_token) {
-              this.refreshToken = refreshRes.json.refresh_token;
+          if (refreshRes.status === 200) {
+            const refreshData = refreshRes.json as { token?: string; refresh_token?: string };
+            if (refreshData.token) {
+              this.apiKey = refreshData.token;
+              if (refreshData.refresh_token) {
+                this.refreshToken = refreshData.refresh_token;
+              }
+              if (this.onTokensUpdated) {
+                void this.onTokensUpdated(this.apiKey, this.refreshToken);
+              }
+              // Retry original request with new token
+              params.headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + this.apiKey,
+              };
+              const retry = await requestUrl(params);
+              if (retry.status === 200) return retry.json as T;
             }
-            if (this.onTokensUpdated) {
-              this.onTokensUpdated(this.apiKey, this.refreshToken);
-            }
-            // Retry original request with new token
-            params.headers = {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + this.apiKey,
-            };
-            const retry = await requestUrl(params);
-            if (retry.status === 200) return retry.json;
           }
         } catch {
           // Refresh failed — fall through to error
@@ -300,7 +303,7 @@ export class LogographyServer {
       throw new Error(`Request failed (${response.status})`);
     }
 
-    return response.json;
+    return response.json as T;
   }
 
   /**

@@ -31,7 +31,7 @@ export class SessionListView extends ItemView {
       cls: 'logography-new-session-btn',
       attr: { title: 'Refresh session list' },
     });
-    refreshBtn.addEventListener('click', () => this.refresh());
+    refreshBtn.addEventListener('click', () => void this.refresh());
 
     // List container
     this.listEl = container.createDiv('logography-sessions');
@@ -88,7 +88,7 @@ export class SessionListView extends ItemView {
 
           const chatView = chatLeaf.view as LogographyView;
           await chatView.loadSession(session);
-          this.app.workspace.revealLeaf(chatLeaf);
+          await this.app.workspace.revealLeaf(chatLeaf);
 
           // Highlight active session
           this.listEl.querySelectorAll('.logography-session-item').forEach(el =>

@@ -16,7 +16,11 @@ export default class LogographyPlugin extends Plugin {
   metricsReporter: MetricsReporter;
   sessionListView: SessionListView | null = null;
 
-  async onload(): Promise<void> {
+  onload(): void {
+    void this._onload();
+  }
+
+  private async _onload(): Promise<void> {
     await this.loadSettings();
 
     // Generate a stable user ID if not set
@@ -94,7 +98,7 @@ export default class LogographyPlugin extends Plugin {
     console.log('Logography loaded — Philosophical Midwifery for Obsidian');
   }
 
-  async onunload(): Promise<void> {
+  onunload(): void {
     console.log('Logography unloaded');
   }
 
@@ -119,7 +123,7 @@ export default class LogographyPlugin extends Plugin {
       chatLeaf = workspace.getRightLeaf(false) || workspace.getLeaf();
       await chatLeaf.setViewState({ type: VIEW_TYPE_LOGOGRAPHY, active: true });
     }
-    workspace.revealLeaf(chatLeaf);
+    await workspace.revealLeaf(chatLeaf);
 
     // Also open session list in right sidebar (tab beside chat)
     await this.activateSessionList();
@@ -143,7 +147,7 @@ export default class LogographyPlugin extends Plugin {
 
   refreshSessionList(): void {
     if (this.sessionListView) {
-      this.sessionListView.refresh();
+      void this.sessionListView.refresh();
     }
   }
 

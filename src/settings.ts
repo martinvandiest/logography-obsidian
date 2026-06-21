@@ -91,8 +91,6 @@ export class LogographySettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName('Logography').setHeading();
-
     // --- Account ---
     new Setting(containerEl).setName('Account').setHeading();
 
@@ -214,7 +212,7 @@ export class LogographySettingTab extends PluginSettingTab {
       text: 'Sign in',
       cls: 'mod-cta',
     });
-    loginBtn.addEventListener('click', () => this.handleLogin());
+    loginBtn.addEventListener('click', () => void this.handleLogin());
 
     const signupLink = btnRow.createEl('a', {
       text: 'Create account',
@@ -242,7 +240,7 @@ export class LogographySettingTab extends PluginSettingTab {
       text: 'Verify',
       cls: 'mod-cta',
     });
-    verifyBtn.addEventListener('click', () => this.handleMfaVerify());
+    verifyBtn.addEventListener('click', () => void this.handleMfaVerify());
 
     const backBtn = btnRow.createEl('button', { text: 'Back' });
     backBtn.addClass('logography-back-btn');
@@ -292,15 +290,17 @@ export class LogographySettingTab extends PluginSettingTab {
 
     const logoutBtn = infoDiv.createEl('button', { text: 'Sign out' });
     logoutBtn.addClass('logography-logout-btn');
-    logoutBtn.addEventListener('click', async () => {
-      this.plugin.settings.apiKey = '';
-      this.plugin.settings.userId = '';
-      this.plugin.settings.userEmail = '';
-      this.plugin.settings.userDisplayName = '';
-      this.plugin.server.updateConfig(this.plugin.settings.serverUrl, '');
-      await this.plugin.saveSettings();
-      new Notice('Signed out');
-      this.display();
+    logoutBtn.addEventListener('click', () => {
+      void (async () => {
+        this.plugin.settings.apiKey = '';
+        this.plugin.settings.userId = '';
+        this.plugin.settings.userEmail = '';
+        this.plugin.settings.userDisplayName = '';
+        this.plugin.server.updateConfig(this.plugin.settings.serverUrl, '');
+        await this.plugin.saveSettings();
+        new Notice('Signed out');
+        this.display();
+      })();
     });
   }
 
@@ -354,7 +354,7 @@ export class LogographySettingTab extends PluginSettingTab {
       cls: 'mod-cta',
     });
     submitBtn.addClass('logography-submit-btn');
-    submitBtn.addEventListener('click', () => this.handleSubmitTicket());
+    submitBtn.addEventListener('click', () => void this.handleSubmitTicket());
   }
 
   private async handleSubmitTicket(): Promise<void> {

@@ -51,7 +51,7 @@ export class LogographyView extends ItemView {
       text: 'New Session',
       cls: 'logography-new-session-btn',
     });
-    newSessionBtn.addEventListener('click', () => this.startNewSession());
+    newSessionBtn.addEventListener('click', () => void this.startNewSession());
 
     // Phase indicator
     this.phaseEl = container.createDiv('logography-phase-indicator');
@@ -75,11 +75,11 @@ export class LogographyView extends ItemView {
     });
 
     // Event listeners
-    sendBtn.addEventListener('click', () => this.handleSend());
+    sendBtn.addEventListener('click', () => void this.handleSend());
     this.inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        this.handleSend();
+        void this.handleSend();
       }
     });
 
@@ -249,7 +249,7 @@ export class LogographyView extends ItemView {
     const phasesCompleted = this.getPhasesCompleted();
     const deflated = this.sessionState.beliefs.filter(b => b.status === 'deflated' || b.status === 'partially_deflated').length;
 
-    this.plugin.server.sendMetrics({
+    void this.plugin.server.sendMetrics({
       user_id: this.sessionState.userId,
       session_id: this.sessionState.sessionId,
       metrics: {
