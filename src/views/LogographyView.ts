@@ -166,7 +166,8 @@ export class LogographyView extends ItemView {
         text,
         this.sessionState,
         crossSessionContext,
-        this.sessionState.faithTradition
+        this.sessionState.faithTradition,
+        this.plugin.settings.model
       );
 
       // Remove thinking indicator

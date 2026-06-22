@@ -53,11 +53,37 @@ var FAITH_TRADITIONS = [
   { value: "syncretic", label: "Syncretic / Multiple traditions" }
 ];
 var MODELS = [
-  { value: "anthropic/claude-opus-4", label: "Claude Opus (default)" },
-  { value: "anthropic/claude-sonnet-4", label: "Claude Sonnet" },
-  { value: "anthropic/claude-haiku", label: "Claude Haiku (faster)" },
-  { value: "openai/gpt-4o", label: "GPT-4o" }
+  // Basic ($0.99/mo)
+  { value: "mimo", label: "MiMo v2.5 Pro", tier: "basic", desc: "Fast, efficient" },
+  { value: "haiku", label: "Claude Haiku 4.5", tier: "basic", desc: "Quick Claude" },
+  { value: "llama-70b", label: "Llama 3.3 70B", tier: "basic", desc: "Open source, free" },
+  { value: "gemma-31b", label: "Gemma 4 31B", tier: "basic", desc: "Google open model" },
+  { value: "hermes-405b", label: "Hermes 3 405B", tier: "basic", desc: "Nous Research" },
+  { value: "nemotron", label: "Nemotron 3 Super", tier: "basic", desc: "NVIDIA 120B" },
+  { value: "qwen3-next", label: "Qwen3 Next 80B", tier: "basic", desc: "Alibaba" },
+  { value: "gpt-oss-120b", label: "GPT-OSS 120B", tier: "basic", desc: "OpenAI open source" },
+  // Standard ($9.99/mo)
+  { value: "sonnet", label: "Claude Sonnet 4", tier: "standard", desc: "Best balance" },
+  { value: "gpt-4o", label: "GPT-4o", tier: "standard", desc: "OpenAI flagship" },
+  { value: "gemini-pro", label: "Gemini 2.5 Pro", tier: "standard", desc: "Google, 1M context" },
+  { value: "gpt-5", label: "GPT-5", tier: "standard", desc: "Next-gen OpenAI" },
+  { value: "o4-mini", label: "o4-mini", tier: "standard", desc: "Reasoning model" },
+  { value: "grok", label: "Grok 4.20", tier: "standard", desc: "xAI, 2M context" },
+  { value: "mistral-large", label: "Mistral Large", tier: "standard", desc: "European flagship" },
+  { value: "gemini-flash", label: "Gemini 3.5 Flash", tier: "standard", desc: "Fast Google, 1M ctx" },
+  // Premium ($19.99/mo)
+  { value: "opus", label: "Claude Opus 4", tier: "premium", desc: "Deep analysis" },
+  { value: "opus-4.5", label: "Claude Opus 4.5", tier: "premium", desc: "Latest Opus" },
+  { value: "gpt-5-pro", label: "GPT-5 Pro", tier: "premium", desc: "Best OpenAI" },
+  { value: "o1", label: "o1", tier: "premium", desc: "Deep reasoning" },
+  { value: "claude-fable", label: "Claude Fable 5", tier: "premium", desc: "Creative analysis" },
+  { value: "gpt-5.5", label: "GPT-5.5", tier: "premium", desc: "Latest OpenAI" }
 ];
+var MODELS_BY_TIER = {
+  basic: MODELS.filter((m) => m.tier === "basic"),
+  standard: MODELS.filter((m) => ["basic", "standard"].includes(m.tier)),
+  premium: MODELS
+};
 var DEFAULT_SETTINGS = {
   serverUrl: "https://logographyapp.com",
   apiKey: "",
@@ -69,7 +95,7 @@ var DEFAULT_SETTINGS = {
   faithTradition: "",
   recoveryMode: false,
   syncEnabled: false,
-  model: "anthropic/claude-opus-4"
+  model: "mimo"
 };
 var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
@@ -135,12 +161,20 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
         })
       );
       new import_obsidian.Setting(containerEl).setName("AI Model").setHeading();
-      new import_obsidian.Setting(containerEl).setName("Model").setDesc("Which AI model to use for analysis").addDropdown((dropdown) => {
+      new import_obsidian.Setting(containerEl).setName("Model").setDesc("Which AI model to use for analysis (server enforces tier access)").addDropdown((dropdown) => {
+        const tierLabels = { basic: "\u2500\u2500 Basic ($0.99) \u2500\u2500", standard: "\u2500\u2500 Standard ($9.99) \u2500\u2500", premium: "\u2500\u2500 Premium ($19.99) \u2500\u2500" };
+        let lastTier = "";
         for (const model of MODELS) {
-          dropdown.addOption(model.value, model.label);
+          if (model.tier !== lastTier) {
+            dropdown.addOption(`__tier_${model.tier}`, tierLabels[model.tier] || model.tier);
+            lastTier = model.tier;
+          }
+          dropdown.addOption(model.value, `${model.label} \u2014 ${model.desc}`);
         }
         dropdown.setValue(this.plugin.settings.model);
         dropdown.onChange(async (value) => {
+          if (value.startsWith("__tier_"))
+            return;
           this.plugin.settings.model = value;
           await this.plugin.saveSettings();
         });
@@ -1198,7 +1232,8 @@ var LogographyView = class extends import_obsidian2.ItemView {
         text,
         this.sessionState,
         crossSessionContext,
-        this.sessionState.faithTradition
+        this.sessionState.faithTradition,
+        this.plugin.settings.model
       );
       thinkingEl.remove();
       const { signal, detail } = this.stateMachine.parseSignal(response.text);
@@ -1467,13 +1502,14 @@ var LogographyServer = class {
    * Send a message via the stateless vault endpoint.
    * Plugin sends full context; server returns response + updated state.
    */
-  async sendVaultMessage(message, sessionState, crossSessionContext, faithTradition) {
+  async sendVaultMessage(message, sessionState, crossSessionContext, faithTradition, model) {
     const request = {
       message,
       session_state: this.serializeState(sessionState),
       cross_session_context: crossSessionContext,
       faith_tradition: faithTradition,
-      session_id: sessionState.sessionId
+      session_id: sessionState.sessionId,
+      model
     };
     return this.request("POST", "/api/chat/vault", request);
   }

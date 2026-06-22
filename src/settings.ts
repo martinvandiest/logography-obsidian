@@ -48,11 +48,40 @@ export const FAITH_TRADITIONS = [
 ];
 
 export const MODELS = [
-  { value: 'anthropic/claude-opus-4', label: 'Claude Opus (default)' },
-  { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet' },
-  { value: 'anthropic/claude-haiku', label: 'Claude Haiku (faster)' },
-  { value: 'openai/gpt-4o', label: 'GPT-4o' },
+  // Basic ($0.99/mo)
+  { value: 'mimo', label: 'MiMo v2.5 Pro', tier: 'basic', desc: 'Fast, efficient' },
+  { value: 'haiku', label: 'Claude Haiku 4.5', tier: 'basic', desc: 'Quick Claude' },
+  { value: 'llama-70b', label: 'Llama 3.3 70B', tier: 'basic', desc: 'Open source, free' },
+  { value: 'gemma-31b', label: 'Gemma 4 31B', tier: 'basic', desc: 'Google open model' },
+  { value: 'hermes-405b', label: 'Hermes 3 405B', tier: 'basic', desc: 'Nous Research' },
+  { value: 'nemotron', label: 'Nemotron 3 Super', tier: 'basic', desc: 'NVIDIA 120B' },
+  { value: 'qwen3-next', label: 'Qwen3 Next 80B', tier: 'basic', desc: 'Alibaba' },
+  { value: 'gpt-oss-120b', label: 'GPT-OSS 120B', tier: 'basic', desc: 'OpenAI open source' },
+
+  // Standard ($9.99/mo)
+  { value: 'sonnet', label: 'Claude Sonnet 4', tier: 'standard', desc: 'Best balance' },
+  { value: 'gpt-4o', label: 'GPT-4o', tier: 'standard', desc: 'OpenAI flagship' },
+  { value: 'gemini-pro', label: 'Gemini 2.5 Pro', tier: 'standard', desc: 'Google, 1M context' },
+  { value: 'gpt-5', label: 'GPT-5', tier: 'standard', desc: 'Next-gen OpenAI' },
+  { value: 'o4-mini', label: 'o4-mini', tier: 'standard', desc: 'Reasoning model' },
+  { value: 'grok', label: 'Grok 4.20', tier: 'standard', desc: 'xAI, 2M context' },
+  { value: 'mistral-large', label: 'Mistral Large', tier: 'standard', desc: 'European flagship' },
+  { value: 'gemini-flash', label: 'Gemini 3.5 Flash', tier: 'standard', desc: 'Fast Google, 1M ctx' },
+
+  // Premium ($19.99/mo)
+  { value: 'opus', label: 'Claude Opus 4', tier: 'premium', desc: 'Deep analysis' },
+  { value: 'opus-4.5', label: 'Claude Opus 4.5', tier: 'premium', desc: 'Latest Opus' },
+  { value: 'gpt-5-pro', label: 'GPT-5 Pro', tier: 'premium', desc: 'Best OpenAI' },
+  { value: 'o1', label: 'o1', tier: 'premium', desc: 'Deep reasoning' },
+  { value: 'claude-fable', label: 'Claude Fable 5', tier: 'premium', desc: 'Creative analysis' },
+  { value: 'gpt-5.5', label: 'GPT-5.5', tier: 'premium', desc: 'Latest OpenAI' },
 ];
+
+export const MODELS_BY_TIER = {
+  basic: MODELS.filter(m => m.tier === 'basic'),
+  standard: MODELS.filter(m => ['basic', 'standard'].includes(m.tier)),
+  premium: MODELS,
+};
 
 export const DEFAULT_SETTINGS: LogographySettings = {
   serverUrl: 'https://logographyapp.com',
@@ -65,7 +94,7 @@ export const DEFAULT_SETTINGS: LogographySettings = {
   faithTradition: '',
   recoveryMode: false,
   syncEnabled: false,
-  model: 'anthropic/claude-opus-4',
+  model: 'mimo',
 };
 
 export class LogographySettingTab extends PluginSettingTab {
@@ -168,13 +197,22 @@ export class LogographySettingTab extends PluginSettingTab {
 
       new Setting(containerEl)
         .setName('Model')
-        .setDesc('Which AI model to use for analysis')
+        .setDesc('Which AI model to use for analysis (server enforces tier access)')
         .addDropdown((dropdown) => {
+          // Group models by tier in the dropdown
+          const tierLabels: Record<string, string> = { basic: '── Basic ($0.99) ──', standard: '── Standard ($9.99) ──', premium: '── Premium ($19.99) ──' };
+          let lastTier = '';
           for (const model of MODELS) {
-            dropdown.addOption(model.value, model.label);
+            if (model.tier !== lastTier) {
+              // Add a disabled separator option for the tier label
+              dropdown.addOption(`__tier_${model.tier}`, tierLabels[model.tier] || model.tier);
+              lastTier = model.tier;
+            }
+            dropdown.addOption(model.value, `${model.label} — ${model.desc}`);
           }
           dropdown.setValue(this.plugin.settings.model);
           dropdown.onChange(async (value) => {
+            if (value.startsWith('__tier_')) return; // ignore separator clicks
             this.plugin.settings.model = value;
             await this.plugin.saveSettings();
           });

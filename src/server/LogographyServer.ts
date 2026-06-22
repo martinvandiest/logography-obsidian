@@ -11,6 +11,7 @@ export interface VaultChatRequest {
   cross_session_context: Record<string, unknown>;
   faith_tradition?: string;
   session_id: string;
+  model?: string;
 }
 
 export interface VaultChatResponse {
@@ -126,7 +127,8 @@ export class LogographyServer {
     message: string,
     sessionState: SessionState,
     crossSessionContext: CrossSessionContext,
-    faithTradition?: string
+    faithTradition?: string,
+    model?: string
   ): Promise<VaultChatResponse> {
     const request: VaultChatRequest = {
       message,
@@ -134,6 +136,7 @@ export class LogographyServer {
       cross_session_context: crossSessionContext as unknown as Record<string, unknown>,
       faith_tradition: faithTradition,
       session_id: sessionState.sessionId,
+      model,
     };
 
     return this.request('POST', '/api/chat/vault', request);
