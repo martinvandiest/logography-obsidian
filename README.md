@@ -31,6 +31,7 @@ This plugin requires a network connection and a Logography account:
 - **Network use:** The plugin connects to `logographyapp.com` to send your message and session context for AI inference. The server returns a response and stores nothing by default.
 - **No telemetry:** The plugin does not include client-side telemetry, analytics, or tracking.
 - **No self-update:** The plugin does not include a self-update mechanism.
+- **Third-party AI providers:** Your conversations are processed by third-party AI model providers (such as Anthropic, OpenAI, Google, and others). Each provider has their own terms of service and data handling policies. By using this plugin, you acknowledge that your conversations are routed to these providers and that you are responsible for reviewing their respective terms. You can choose which provider processes your conversations in plugin settings.
 
 ## Optional session sync
 
