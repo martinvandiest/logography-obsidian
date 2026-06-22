@@ -56,10 +56,28 @@ When sync is disabled (default):
 - If sync is enabled, a copy of each session is stored on the server for cross-device access.
 - No analytics, no tracking, no training on your data.
 
+## Installation
+
+### From Obsidian (recommended)
+
+1. Open Settings → Community Plugins → Browse.
+2. Search for **Logography**.
+3. Click **Install**, then **Enable**.
+
+> **Not showing up yet?** New plugins go through a review queue before appearing in the in-app browser. If you don't see Logography, use the manual install below or check [GitHub Releases](https://github.com/martinvandiest/logography-obsidian/releases/latest) for the latest status.
+
+### Manual install (while awaiting community review)
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/martinvandiest/logography-obsidian/releases/latest).
+2. Create a folder `Logography` inside your vault's `.obsidian/plugins/` directory.
+3. Copy the three files into that folder.
+4. Reload Obsidian (Ctrl/Cmd+R).
+5. Enable the plugin in Settings → Community Plugins.
+
 ## Getting started
 
-1. Enable the plugin in Settings → Community Plugins.
-2. Click the brain icon in the ribbon to open Logography.
+1. Click the brain icon in the ribbon to open Logography.
+2. Sign in with your account (or create one at [logographyapp.com](https://logographyapp.com)).
 3. Share a dream, a problem, or a question.
 
 ## Commands
