@@ -76,6 +76,8 @@ When sync is disabled (default):
 
 ## Getting started
 
+**Free intro offer:** Use code **FREEINTRO** at checkout for 2 months of Basic free. Valid through July 31, 2026.
+
 1. Click the brain icon in the ribbon to open Logography.
 2. Sign in with your account (or create one at [logographyapp.com](https://logographyapp.com)).
 3. Share a dream, a problem, or a question.
