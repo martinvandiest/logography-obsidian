@@ -1,7 +1,7 @@
 // Logography — Obsidian Plugin for AI Dream Analysis
 // Architecture: Vault as source of truth. Plugin is the brain, server is the tongue.
 
-import { Plugin } from 'obsidian';
+import { Plugin, Notice } from 'obsidian';
 import { LogographySettings, DEFAULT_SETTINGS, LogographySettingTab } from './settings';
 import { LogographyView, VIEW_TYPE_LOGOGRAPHY } from './views/LogographyView';
 import { SessionListView, VIEW_TYPE_SESSION_LIST } from './views/SessionListView';
@@ -92,6 +92,12 @@ export default class LogographyPlugin extends Plugin {
       callback: () => { void this.quickCapture(); },
     });
 
+    this.addCommand({
+      id: 'sync-journal',
+      name: 'Sync Journal',
+      callback: () => { void this.syncJournal(); },
+    });
+
     // Settings tab
     this.addSettingTab(new LogographySettingTab(this.app, this));
 
@@ -158,6 +164,55 @@ export default class LogographyPlugin extends Plugin {
     if (leaves.length > 0) {
       const view = leaves[0].view as LogographyView;
       view.focusInput();
+    }
+  }
+
+  async syncJournal(): Promise<void> {
+    if (!this.settings.apiKey || !this.server) return;
+
+    try {
+      // 1. Get server entries
+      const serverEntries = await this.server.listJournal();
+      const serverMap = new Map(serverEntries.map(e => [e.id, e]));
+
+      // 2. Get vault files
+      const vaultFiles = await this.vaultStorage.listJournalFiles();
+      const vaultMap = new Map(vaultFiles.map(f => [f.entryId, f]));
+
+      // 3. Pull: server entries not in vault → write to vault
+      for (const entry of serverEntries) {
+        if (!vaultMap.has(entry.id)) {
+          await this.vaultStorage.saveJournalEntry(entry);
+        }
+      }
+
+      // 4. Push: vault files not in server → upload
+      for (const vf of vaultFiles) {
+        if (!serverMap.has(vf.entryId)) {
+          const {content} = await this.vaultStorage.readJournalFile(vf.file);
+          if (content) {
+            await this.server.createJournalEntry(content);
+          }
+        }
+      }
+
+      // 5. Update: vault files modified after server → push updates
+      for (const vf of vaultFiles) {
+        const serverEntry = serverMap.get(vf.entryId);
+        if (serverEntry) {
+          const vaultMtime = vf.file.stat.mtime;
+          const serverTime = new Date(serverEntry.updated_at).getTime();
+          if (vaultMtime > serverTime + 1000) {
+            const {content} = await this.vaultStorage.readJournalFile(vf.file);
+            await this.server.updateJournalEntry(vf.entryId, content);
+          }
+        }
+      }
+
+      new Notice('Journal synced');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Sync failed';
+      new Notice(`Journal sync failed: ${msg}`);
     }
   }
 }

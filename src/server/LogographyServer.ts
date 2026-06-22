@@ -84,6 +84,14 @@ export interface SupportTicketMessage {
   created_at: string;
 }
 
+export interface JournalEntry {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface SupportTicketDetail extends SupportTicket {
   description: string;
   messages: SupportTicketMessage[];
@@ -237,6 +245,27 @@ export class LogographyServer {
     await this.request('POST', `/api/support/tickets/my/${ticketId}/reply`, {
       message,
     });
+  }
+
+  // --- Journal API ---
+
+  async listJournal(): Promise<JournalEntry[]> {
+    return this.request('GET', `/api/journal/${this.userId}`);
+  }
+
+  async createJournalEntry(content: string): Promise<JournalEntry> {
+    return this.request('POST', '/api/journal', {
+      user_id: this.userId,
+      content,
+    });
+  }
+
+  async updateJournalEntry(entryId: string, content: string): Promise<void> {
+    await this.request('PUT', `/api/journal/${entryId}`, { content });
+  }
+
+  async deleteJournalEntry(entryId: string): Promise<void> {
+    await this.request('DELETE', `/api/journal/${entryId}`);
   }
 
   // --- Internal ---

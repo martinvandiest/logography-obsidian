@@ -38,6 +38,75 @@ export class VaultStorage {
     }
   }
 
+  // --- Journal I/O ---
+
+  /**
+   * List all journal files in the vault that have entry_id frontmatter.
+   */
+  async listJournalFiles(): Promise<Array<{file: TFile, entryId: string, updatedAt: string}>> {
+    const folder = this.vault.getAbstractFileByPath(JOURNAL_FOLDER);
+    if (!(folder instanceof TFolder)) return [];
+
+    const files: Array<{file: TFile, entryId: string, updatedAt: string}> = [];
+    for (const child of folder.children) {
+      if (child instanceof TFile && child.extension === 'md') {
+        const content = await this.vault.read(child);
+        const fm = this.parseFrontmatter(content);
+        if (fm && fm.entry_id) {
+          files.push({
+            file: child,
+            entryId: fm.entry_id as string,
+            updatedAt: (fm.updated_at as string) || '',
+          });
+        }
+      }
+    }
+    return files;
+  }
+
+  /**
+   * Save a journal entry to vault as markdown with YAML frontmatter.
+   */
+  async saveJournalEntry(entry: {id: string, content: string, created_at: string, updated_at: string}): Promise<void> {
+    const date = entry.created_at.slice(0, 10);
+    const filepath = `${JOURNAL_FOLDER}/${date}-${entry.id}.md`;
+
+    const frontmatter = [
+      '---',
+      `entry_id: "${entry.id}"`,
+      `created_at: "${entry.created_at}"`,
+      `updated_at: "${entry.updated_at}"`,
+      '---',
+    ].join('\n');
+
+    const fileContent = `${frontmatter}\n\n${entry.content}\n`;
+
+    const existing = this.vault.getAbstractFileByPath(filepath);
+    if (existing instanceof TFile) {
+      await this.vault.modify(existing, fileContent);
+    } else {
+      await this.ensureFolder(JOURNAL_FOLDER);
+      await this.vault.create(filepath, fileContent);
+    }
+  }
+
+  /**
+   * Read a journal file's content (body only, no frontmatter).
+   */
+  async readJournalFile(file: TFile): Promise<{content: string, frontmatter: Record<string, unknown> | null}> {
+    const raw = await this.vault.read(file);
+    const fm = this.parseFrontmatter(raw);
+    const body = raw.replace(/^---\n[\s\S]*?\n---\n*/, '').trim();
+    return { content: body, frontmatter: fm };
+  }
+
+  /**
+   * Delete a journal file from vault (move to trash).
+   */
+  async deleteJournalFile(file: TFile): Promise<void> {
+    await this.app.fileManager.trashFile(file);
+  }
+
   // --- Session I/O ---
 
   /**

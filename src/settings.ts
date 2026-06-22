@@ -306,6 +306,15 @@ export class LogographySettingTab extends PluginSettingTab {
       });
     }
 
+    // Sync journal button
+    const journalSyncSetting = new Setting(infoDiv)
+      .setName('Sync journal')
+      .setDesc('Pull journal entries from server and push local changes.');
+    journalSyncSetting.addButton((btn) => {
+      btn.setButtonText('Sync');
+      btn.onClick(() => { void this.plugin.syncJournal(); });
+    });
+
     // Import from server button
     const importSetting = new Setting(infoDiv)
       .setName('Import sessions from server')

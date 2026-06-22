@@ -249,6 +249,13 @@ var LogographySettingTab = class extends import_obsidian.PluginSettingTab {
         cls: "logography-display-name"
       });
     }
+    const journalSyncSetting = new import_obsidian.Setting(infoDiv).setName("Sync journal").setDesc("Pull journal entries from server and push local changes.");
+    journalSyncSetting.addButton((btn) => {
+      btn.setButtonText("Sync");
+      btn.onClick(() => {
+        void this.plugin.syncJournal();
+      });
+    });
     const importSetting = new import_obsidian.Setting(infoDiv).setName("Import sessions from server").setDesc("One-time migration: pull your existing sessions into this vault.");
     importSetting.addButton((btn) => {
       btn.setButtonText("Import");
@@ -1586,6 +1593,22 @@ var LogographyServer = class {
       message
     });
   }
+  // --- Journal API ---
+  async listJournal() {
+    return this.request("GET", `/api/journal/${this.userId}`);
+  }
+  async createJournalEntry(content) {
+    return this.request("POST", "/api/journal", {
+      user_id: this.userId,
+      content
+    });
+  }
+  async updateJournalEntry(entryId, content) {
+    await this.request("PUT", `/api/journal/${entryId}`, { content });
+  }
+  async deleteJournalEntry(entryId) {
+    await this.request("DELETE", `/api/journal/${entryId}`);
+  }
   // --- Internal ---
   async request(method, path, body) {
     const params = {
@@ -1707,6 +1730,70 @@ var VaultStorage = class {
     if (!existing) {
       await this.vault.createFolder(path);
     }
+  }
+  // --- Journal I/O ---
+  /**
+   * List all journal files in the vault that have entry_id frontmatter.
+   */
+  async listJournalFiles() {
+    const folder = this.vault.getAbstractFileByPath(JOURNAL_FOLDER);
+    if (!(folder instanceof import_obsidian5.TFolder))
+      return [];
+    const files = [];
+    for (const child of folder.children) {
+      if (child instanceof import_obsidian5.TFile && child.extension === "md") {
+        const content = await this.vault.read(child);
+        const fm = this.parseFrontmatter(content);
+        if (fm && fm.entry_id) {
+          files.push({
+            file: child,
+            entryId: fm.entry_id,
+            updatedAt: fm.updated_at || ""
+          });
+        }
+      }
+    }
+    return files;
+  }
+  /**
+   * Save a journal entry to vault as markdown with YAML frontmatter.
+   */
+  async saveJournalEntry(entry) {
+    const date = entry.created_at.slice(0, 10);
+    const filepath = `${JOURNAL_FOLDER}/${date}-${entry.id}.md`;
+    const frontmatter = [
+      "---",
+      `entry_id: "${entry.id}"`,
+      `created_at: "${entry.created_at}"`,
+      `updated_at: "${entry.updated_at}"`,
+      "---"
+    ].join("\n");
+    const fileContent = `${frontmatter}
+
+${entry.content}
+`;
+    const existing = this.vault.getAbstractFileByPath(filepath);
+    if (existing instanceof import_obsidian5.TFile) {
+      await this.vault.modify(existing, fileContent);
+    } else {
+      await this.ensureFolder(JOURNAL_FOLDER);
+      await this.vault.create(filepath, fileContent);
+    }
+  }
+  /**
+   * Read a journal file's content (body only, no frontmatter).
+   */
+  async readJournalFile(file) {
+    const raw = await this.vault.read(file);
+    const fm = this.parseFrontmatter(raw);
+    const body = raw.replace(/^---\n[\s\S]*?\n---\n*/, "").trim();
+    return { content: body, frontmatter: fm };
+  }
+  /**
+   * Delete a journal file from vault (move to trash).
+   */
+  async deleteJournalFile(file) {
+    await this.app.fileManager.trashFile(file);
   }
   // --- Session I/O ---
   /**
@@ -2115,6 +2202,13 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
         void this.quickCapture();
       }
     });
+    this.addCommand({
+      id: "sync-journal",
+      name: "Sync Journal",
+      callback: () => {
+        void this.syncJournal();
+      }
+    });
     this.addSettingTab(new LogographySettingTab(this.app, this));
     console.log("Logography loaded \u2014 Philosophical Midwifery for Obsidian");
   }
@@ -2166,6 +2260,44 @@ var LogographyPlugin = class extends import_obsidian6.Plugin {
     if (leaves.length > 0) {
       const view = leaves[0].view;
       view.focusInput();
+    }
+  }
+  async syncJournal() {
+    if (!this.settings.apiKey || !this.server)
+      return;
+    try {
+      const serverEntries = await this.server.listJournal();
+      const serverMap = new Map(serverEntries.map((e) => [e.id, e]));
+      const vaultFiles = await this.vaultStorage.listJournalFiles();
+      const vaultMap = new Map(vaultFiles.map((f) => [f.entryId, f]));
+      for (const entry of serverEntries) {
+        if (!vaultMap.has(entry.id)) {
+          await this.vaultStorage.saveJournalEntry(entry);
+        }
+      }
+      for (const vf of vaultFiles) {
+        if (!serverMap.has(vf.entryId)) {
+          const { content } = await this.vaultStorage.readJournalFile(vf.file);
+          if (content) {
+            await this.server.createJournalEntry(content);
+          }
+        }
+      }
+      for (const vf of vaultFiles) {
+        const serverEntry = serverMap.get(vf.entryId);
+        if (serverEntry) {
+          const vaultMtime = vf.file.stat.mtime;
+          const serverTime = new Date(serverEntry.updated_at).getTime();
+          if (vaultMtime > serverTime + 1e3) {
+            const { content } = await this.vaultStorage.readJournalFile(vf.file);
+            await this.server.updateJournalEntry(vf.entryId, content);
+          }
+        }
+      }
+      new import_obsidian6.Notice("Journal synced");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sync failed";
+      new import_obsidian6.Notice(`Journal sync failed: ${msg}`);
     }
   }
 };
